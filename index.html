@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Stock Chart Viewer</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="container">
+            <h1>Stock Chart Visualizer</h1>
+
+            <div class="api-key-section">
+                <h3>API Configuration</h3>
+                <p>Enter your free Finnhub API key. Get one at <a href="https://finnhub.io" target="_blank">finnhub.io</a></p>
+                <div class="form-group">
+                    <label for="apiKey">Finnhub API Key:</label>
+                    <input type="password" id="apiKey" placeholder="Enter your API key here">
+                </div>
+            </div>
+
+
+            <div class="search-section">
+                <div class="input-group">
+                    <div class="form-group">
+                        <label for="companySymbol">Stock Symbol:</label>
+                        <input type="text" id="companySymbol" placeholder="TSLA" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label form="timeRange">Time Range:</label>
+                        <select id="timeRange">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="365">Last year</option>
+                        </select>
+                    </div>
+                    <button id="searchButton" onclick="searchStock()">Set Chart</button>
+                </div>
+            </div>
+
+            <div id="error" class="error"></div>
+
+            <div class="chart-section">
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading stock data...</p>
+                </div>
+
+                <div id="stockInfo" class="stock-info">
+                    <div class="info-card">
+                        <div class="info-label">Company</div>
+                        <div id="companyName" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Current Price</div>
+                        <div id="currentPrice" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Change</div>
+                        <div id="priceChange" class="info-value price-change">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">High</div>
+                        <div id="dayHigh" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Low</div>
+                        <div id="dayLow" class="info-value">-</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <script src="script.js"></script>
+    </body>
+</html>
