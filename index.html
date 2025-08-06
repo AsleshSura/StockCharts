@@ -4,8 +4,13 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Stock Chart Viewer</title>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+        <script>
+            // Fallback if Chart.js doesn't load
+            if (typeof Chart === 'undefined') {
+                document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"><\/script>');
+            }
+        </script>
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
@@ -15,6 +20,7 @@
             <div class="api-key-section">
                 <h3>API Configuration</h3>
                 <p>Enter your free Finnhub API key. Get one at <a href="https://finnhub.io" target="_blank">finnhub.io</a></p>
+                <p><small>For chart data, you may also try <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a> if you encounter limitations.</small></p>
                 <div class="form-group">
                     <label for="apiKey">Finnhub API Key:</label>
                     <input type="password" id="apiKey" placeholder="Enter your API key here">
@@ -31,8 +37,8 @@
                     <div class="form-group">
                         <label form="timeRange">Time Range:</label>
                         <select id="timeRange">
-                            <option value="7">Last 7 days</option>
-                            <option value="30" selected>Last 30 days</option>
+                            <option value="7" selected>Last 7 days</option>
+                            <option value="30">Last 30 days</option>
                             <option value="90">Last 90 days</option>
                             <option value="365">Last year</option>
                         </select>
