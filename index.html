@@ -4,29 +4,19 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Stock Chart Viewer</title>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
-        <script>
-            // Fallback if Chart.js doesn't load
-            if (typeof Chart === 'undefined') {
-                document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"><\/script>');
-            }
-        </script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
         <div class="container">
             <h1>Stock Chart Visualizer</h1>
 
-            <div class="api-key-section">
-                <h3>API Configuration</h3>
-                <p>Enter your free Finnhub API key. Get one at <a href="https://finnhub.io" target="_blank">finnhub.io</a></p>
-                <p><small>For chart data, you may also try <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a> if you encounter limitations.</small></p>
-                <div class="form-group">
-                    <label for="apiKey">Finnhub API Key:</label>
-                    <input type="password" id="apiKey" placeholder="Enter your API key here">
-                </div>
+            <div class="info-section">
+                <h3>Stock Chart Visualizer</h3>
+                <p>Get stock data and interactive charts for any publicly traded company.</p>
+                <p><small><em>Note: Currently using demo data. For real-time data, get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a> and replace 'demo' in the code.</em></small></p>
             </div>
-
 
             <div class="search-section">
                 <div class="input-group">
