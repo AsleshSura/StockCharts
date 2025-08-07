@@ -15,7 +15,15 @@
             <div class="info-section">
                 <h3>Stock Chart Visualizer</h3>
                 <p>Get stock data and interactive charts for any publicly traded company.</p>
-                <p><small><em>Note: Currently using demo data. For real-time data, get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a> and replace 'demo' in the code.</em></small></p>
+                <p><small><em>Note: Enter your API key below for real-time data, or leave empty to use demo data. Get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a>.</em></small></p>
+            </div>
+
+            <div class="api-section">
+                <div class="form-group">
+                    <label for="apiKey">Alpha Vantage API Key (Optional):</label>
+                    <input type="text" id="apiKey" placeholder="Enter your API key or leave empty for demo data" maxlength="50">
+                    <small class="help-text">Leave empty to use demo data with limited functionality</small>
+                </div>
             </div>
 
             <div class="search-section">
@@ -74,6 +82,7 @@
             </div>
         </div>
 
+        <script src="utils.js"></script>
         <script src="script.js"></script>
     </body>
 </html>

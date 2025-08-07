@@ -1,6 +1,12 @@
 // Using Alpha Vantage free API as fallback
-const ALPHA_VANTAGE_API_KEY = 'demo'; // You can get a free key from https://www.alphavantage.co/support/#api-key
+const DEFAULT_API_KEY = 'demo'; // Default demo key
 const ALPHA_VANTAGE_BASE_URL = 'https://www.alphavantage.co/query';
+
+// Function to get the current API key from user input or use demo
+function getApiKey() {
+    const userApiKey = document.getElementById('apiKey').value.trim();
+    return userApiKey || DEFAULT_API_KEY;
+}
 
 // Backup Yahoo Finance endpoints
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
@@ -12,6 +18,29 @@ document.getElementById('companySymbol').addEventListener('keypress', function(e
     if (e.key === 'Enter') {
         searchStock();
     }
+});
+
+// Add event listener for API key input to provide feedback
+document.getElementById('apiKey').addEventListener('input', function(e) {
+    updateApiKeyStatus();
+});
+
+function updateApiKeyStatus() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const helpText = document.querySelector('.help-text');
+    
+    if (apiKey && apiKey !== 'demo') {
+        helpText.textContent = 'Using your API key for real-time data';
+        helpText.style.color = '#38a169';
+    } else {
+        helpText.textContent = 'Leave empty to use demo data with limited functionality';
+        helpText.style.color = '#718096';
+    }
+}
+
+// Initialize API key status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateApiKeyStatus();
 });
 
 async function searchStock() {
@@ -27,6 +56,12 @@ async function searchStock() {
         return;
     }
 
+    // Validate symbol format if utils.js is loaded
+    if (typeof isValidStockSymbol === 'function' && !isValidStockSymbol(symbol)) {
+        showError('Please enter a valid stock symbol (1-5 letters)');
+        return;
+    }
+
     showLoading();
     document.getElementById('searchButton').disabled = true;
 
@@ -34,17 +69,31 @@ async function searchStock() {
         // Try using Alpha Vantage API first (more reliable)
         console.log('Trying Alpha Vantage...');
         await searchStockAlphaVantage(symbol, timeRange);
+        console.log('Alpha Vantage succeeded');
     } catch (error) {
-        console.error('Alpha Vantage failed, trying Yahoo Finance:', error);
+        console.error('Alpha Vantage failed:', error.message);
         try {
             // Fallback to Yahoo Finance
             console.log('Trying Yahoo Finance...');
             await searchStockYahoo(symbol, timeRange);
+            console.log('Yahoo Finance succeeded');
         } catch (yahooError) {
-            console.error('Both APIs failed, using mock data:', yahooError);
-            // Use mock data as last resort
-            console.log('Using mock data...');
-            await searchStockMockData(symbol, timeRange);
+            console.error('Yahoo Finance also failed:', yahooError.message);
+            try {
+                // Use mock data as last resort
+                console.log('Using mock data...');
+                await searchStockMockData(symbol, timeRange);
+                console.log('Mock data generated successfully');
+                
+                // Use utility function for better error formatting if available
+                const errorMessage = typeof formatErrorMessage === 'function' 
+                    ? formatErrorMessage(error) 
+                    : `Could not fetch real data for ${symbol}. Showing demo data instead.`;
+                showError(errorMessage);
+            } catch (mockError) {
+                console.error('Even mock data failed:', mockError);
+                showError(`Failed to generate any data for ${symbol}. Please try again.`);
+            }
         }
     } finally {
         hideLoading();
@@ -54,19 +103,31 @@ async function searchStock() {
 
 async function searchStockAlphaVantage(symbol, timeRange) {
     // Get daily time series data
-    const timeSeriesResponse = await fetch(
-        `${ALPHA_VANTAGE_BASE_URL}?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${ALPHA_VANTAGE_API_KEY}&outputsize=compact`
-    );
+    const apiKey = getApiKey();
+    const url = `${ALPHA_VANTAGE_BASE_URL}?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact`;
+    
+    console.log('Fetching from Alpha Vantage:', url);
+    
+    const timeSeriesResponse = await fetch(url);
     
     if (!timeSeriesResponse.ok) {
-        throw new Error('Failed to fetch from Alpha Vantage');
+        throw new Error(`Alpha Vantage HTTP error: ${timeSeriesResponse.status} ${timeSeriesResponse.statusText}`);
     }
     
     const timeSeriesData = await timeSeriesResponse.json();
     console.log('Alpha Vantage response:', timeSeriesData);
     
-    if (timeSeriesData['Error Message'] || timeSeriesData['Note']) {
-        throw new Error(timeSeriesData['Error Message'] || 'API rate limit exceeded');
+    // Check for various Alpha Vantage error conditions
+    if (timeSeriesData['Error Message']) {
+        throw new Error(`Alpha Vantage Error: ${timeSeriesData['Error Message']}`);
+    }
+    
+    if (timeSeriesData['Note']) {
+        throw new Error(`Alpha Vantage Rate Limit: ${timeSeriesData['Note']}`);
+    }
+    
+    if (timeSeriesData['Information']) {
+        throw new Error(`Alpha Vantage Info: ${timeSeriesData['Information']}`);
     }
     
     if (!timeSeriesData['Time Series (Daily)']) {
@@ -126,62 +187,93 @@ async function searchStockYahoo(symbol, timeRange) {
     const startTimestamp = Math.floor(startDate.getTime() / 1000);
     const endTimestamp = Math.floor(endDate.getTime() / 1000);
 
-    const [chartResponse, quoteResponse] = await Promise.all([
-        fetch(`${CORS_PROXY}${encodeURIComponent(YF_BASE_URL + '/v7/finance/chart/' + symbol + '?period1=' + startTimestamp + '&period2=' + endTimestamp + '&interval=1d')}`),
-        fetch(`${CORS_PROXY}${encodeURIComponent(YF_BASE_URL + '/v6/finance/quote?symbols=' + symbol)}`)
-    ]);
+    // Try multiple CORS proxies as backup
+    const corsProxies = [
+        'https://api.allorigins.win/raw?url=',
+        'https://cors-anywhere.herokuapp.com/',
+        'https://api.codetabs.com/v1/proxy?quest='
+    ];
 
-    console.log('Chart response status:', chartResponse.status);
-    console.log('Quote response status:', quoteResponse.status);
-    
-    if (!chartResponse.ok || !quoteResponse.ok) {
-        throw new Error(`Failed to fetch stock data. Chart: ${chartResponse.status}, Quote: ${quoteResponse.status}`);
+    let lastError = null;
+
+    for (const proxy of corsProxies) {
+        try {
+            console.log(`Trying CORS proxy: ${proxy}`);
+            
+            const [chartResponse, quoteResponse] = await Promise.all([
+                fetch(`${proxy}${encodeURIComponent(YF_BASE_URL + '/v7/finance/chart/' + symbol + '?period1=' + startTimestamp + '&period2=' + endTimestamp + '&interval=1d')}`),
+                fetch(`${proxy}${encodeURIComponent(YF_BASE_URL + '/v6/finance/quote?symbols=' + symbol)}`)
+            ]);
+
+            console.log('Chart response status:', chartResponse.status);
+            console.log('Quote response status:', quoteResponse.status);
+            
+            if (!chartResponse.ok || !quoteResponse.ok) {
+                throw new Error(`HTTP error - Chart: ${chartResponse.status}, Quote: ${quoteResponse.status}`);
+            }
+            
+            const chartData = await chartResponse.json();
+            const quoteData = await quoteResponse.json();
+
+            console.log('Chart data:', chartData);
+            console.log('Quote data:', quoteData);
+
+            if (!chartData || !chartData.chart || chartData.chart.error || !chartData.chart.result || chartData.chart.result.length === 0) {
+                throw new Error('Invalid chart data or no data available');
+            }
+
+            if (!quoteData || !quoteData.quoteResponse || quoteData.quoteResponse.error || !quoteData.quoteResponse.result || quoteData.quoteResponse.result.length === 0) {
+                throw new Error('Unable to fetch quote data');
+            }
+
+            const result = chartData.chart.result[0];
+            const quote = quoteData.quoteResponse.result[0];
+
+            if (!result || !quote) {
+                throw new Error('Invalid response data structure');
+            }
+
+            updateStockInfo(result, quote, symbol);
+            createChart(result, quote.longName || quote.shortName || symbol);
+            return; // Success, exit function
+            
+        } catch (error) {
+            console.error(`Proxy ${proxy} failed:`, error);
+            lastError = error;
+            continue; // Try next proxy
+        }
     }
     
-    const chartData = await chartResponse.json();
-    const quoteData = await quoteResponse.json();
-
-    console.log('Chart data:', chartData);
-    console.log('Quote data:', quoteData);
-
-    if (!chartData || !chartData.chart || chartData.chart.error || !chartData.chart.result || chartData.chart.result.length === 0) {
-        throw new Error('Invalid stock symbol or no data available');
-    }
-
-    if (!quoteData || !quoteData.quoteResponse || quoteData.quoteResponse.error || !quoteData.quoteResponse.result || quoteData.quoteResponse.result.length === 0) {
-        throw new Error('Unable to fetch current quote data');
-    }
-
-    const result = chartData.chart.result[0];
-    const quote = quoteData.quoteResponse.result[0];
-
-    if (!result || !quote) {
-        throw new Error('Invalid response data structure');
-    }
-
-    updateStockInfo(result, quote, symbol);
-    createChart(result, quote.longName || quote.shortName || symbol);
+    // If all proxies failed, throw the last error
+    throw new Error(`All Yahoo Finance proxies failed. Last error: ${lastError.message}`);
 }
 
 async function searchStockMockData(symbol, timeRange) {
-    console.log('Using mock data for', symbol);
+    console.log('Generating mock data for', symbol, 'with timeRange:', timeRange);
     
     // Generate realistic mock data
-    const currentPrice = 100 + Math.random() * 200; // Random price between 100-300
+    const basePrice = 50 + Math.random() * 200; // Random price between 50-250
     const timestamps = [];
     const prices = [];
     
-    for (let i = timeRange; i >= 0; i--) {
+    // Ensure we have valid timeRange
+    const validTimeRange = Math.max(timeRange || 30, 7);
+    
+    for (let i = validTimeRange; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
         timestamps.push(Math.floor(date.getTime() / 1000)); // Store as timestamp
         
-        // Generate price with some realistic variation
-        const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
-        const price = currentPrice * (1 + variation * (i / timeRange));
+        // Generate price with some realistic variation and trend
+        const trendFactor = (validTimeRange - i) / validTimeRange; // 0 to 1
+        const volatility = (Math.random() - 0.5) * 0.15; // ±7.5% daily variation
+        const trend = Math.sin(trendFactor * Math.PI) * 0.1; // Gentle trend
+        
+        const price = basePrice * (1 + trend + volatility);
         prices.push(Math.max(price, 1)); // Ensure positive price
     }
     
+    const currentPrice = prices[prices.length - 1];
     const previousPrice = prices[prices.length - 2] || currentPrice;
     
     const quote = {
@@ -189,8 +281,8 @@ async function searchStockMockData(symbol, timeRange) {
         shortName: symbol,
         regularMarketPrice: currentPrice,
         regularMarketPreviousClose: previousPrice,
-        regularMarketDayHigh: Math.max(...prices.slice(-5)),
-        regularMarketDayLow: Math.min(...prices.slice(-5))
+        regularMarketDayHigh: Math.max(...prices.slice(-5)) * 1.02,
+        regularMarketDayLow: Math.min(...prices.slice(-5)) * 0.98
     };
     
     const chartResult = {
@@ -208,7 +300,7 @@ async function searchStockMockData(symbol, timeRange) {
         }
     };
     
-    console.log('Mock data created:', chartResult);
+    console.log('Mock data created successfully:', { symbol, dataPoints: prices.length, priceRange: [Math.min(...prices), Math.max(...prices)] });
     updateStockInfo(chartResult, quote, symbol);
     createChart(chartResult, quote.longName);
 }

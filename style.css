@@ -118,6 +118,40 @@ button:disabled {
     font-size: 14px;
 }
 
+.api-section {
+    background: #ebf8ff;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border-left: 4px solid #3182ce;
+}
+
+.api-section .form-group {
+    margin-bottom: 0;
+}
+
+.api-section label {
+    color: #2c5282;
+    font-weight: 600;
+}
+
+.api-section input {
+    border-color: #bee3f8;
+}
+
+.api-section input:focus {
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.help-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #718096;
+    font-style: italic;
+}
+
 .warning-section {
     background: #fff5f5;
     padding: 20px;
