@@ -23,6 +23,60 @@
                 <p><small><em>Note: Enter your API key below for real-time data, or leave empty to use demo data. Get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a>.</em></small></p>
             </div>
 
+            <!-- Market Indices Section -->
+            <div class="market-indices-section">
+                <div class="indices-header">
+                    <h3>Market Indices</h3>
+                    <div class="market-status">
+                        <span class="status-indicator" id="marketStatus">Market Status</span>
+                    </div>
+                </div>
+                <div class="indices-container">
+                    <div class="index-card" data-index="SPY" onclick="loadIndexChart('SPY', 'S&P 500')">
+                        <div class="index-header">
+                            <h4>S&P 500</h4>
+                            <span class="index-symbol">SPY</span>
+                        </div>
+                        <div class="index-value">
+                            <span class="index-price" id="spyPrice">Loading...</span>
+                            <span class="index-change" id="spyChange">-</span>
+                        </div>
+                        <button class="index-chart-btn" onclick="event.stopPropagation(); loadIndexChart('SPY', 'S&P 500')">View Chart</button>
+                    </div>
+                    
+                    <div class="index-card" data-index="QQQ" onclick="loadIndexChart('QQQ', 'NASDAQ')">
+                        <div class="index-header">
+                            <h4>NASDAQ</h4>
+                            <span class="index-symbol">QQQ</span>
+                        </div>
+                        <div class="index-value">
+                            <span class="index-price" id="qqqPrice">Loading...</span>
+                            <span class="index-change" id="qqqChange">-</span>
+                        </div>
+                        <button class="index-chart-btn" onclick="event.stopPropagation(); loadIndexChart('QQQ', 'NASDAQ')">View Chart</button>
+                    </div>
+                    
+                    <div class="index-card" data-index="DIA" onclick="loadIndexChart('DIA', 'Dow Jones')">
+                        <div class="index-header">
+                            <h4>Dow Jones</h4>
+                            <span class="index-symbol">DIA</span>
+                        </div>
+                        <div class="index-value">
+                            <span class="index-price" id="diaPrice">Loading...</span>
+                            <span class="index-change" id="diaChange">-</span>
+                        </div>
+                        <button class="index-chart-btn" onclick="event.stopPropagation(); loadIndexChart('DIA', 'Dow Jones')">View Chart</button>
+                    </div>
+                </div>
+                <div class="indices-refresh">
+                    <button id="refreshIndices" onclick="refreshMarketIndices()">
+                        <span class="refresh-icon">↻</span>
+                        Refresh Indices
+                    </button>
+                    <span class="last-updated">Last updated: <span id="lastUpdated">-</span></span>
+                </div>
+            </div>
+
             <div class="api-section">
                 <div class="form-group">
                     <label for="apiKey">Alpha Vantage API Key (Optional):</label>

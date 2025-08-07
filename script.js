@@ -62,6 +62,11 @@ async function searchStock() {
         return;
     }
 
+    // Clear active index highlighting if searching for a non-index symbol
+    if (!MARKET_INDICES[symbol]) {
+        clearActiveIndex();
+    }
+
     showLoading();
     document.getElementById('searchButton').disabled = true;
 
@@ -990,4 +995,279 @@ function clearComparisonInfo() {
     
     document.getElementById('stockATitle').textContent = 'Stock A';
     document.getElementById('stockBTitle').textContent = 'Stock B';
+}
+
+// Market Indices Functionality
+const MARKET_INDICES = {
+    'SPY': { name: 'S&P 500', fullName: 'SPDR S&P 500 ETF Trust' },
+    'QQQ': { name: 'NASDAQ', fullName: 'Invesco QQQ Trust' },
+    'DIA': { name: 'Dow Jones', fullName: 'SPDR Dow Jones Industrial Average ETF' }
+};
+
+// Initialize market indices on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateMarketStatus();
+    refreshMarketIndices();
+    
+    // Auto-refresh indices every 5 minutes
+    setInterval(refreshMarketIndices, 5 * 60 * 1000);
+    
+    // Update market status every minute
+    setInterval(updateMarketStatus, 60 * 1000);
+});
+
+function updateMarketStatus() {
+    const statusElement = document.getElementById('marketStatus');
+    if (!statusElement) return;
+    
+    const now = new Date();
+    const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const day = easternTime.getDay(); // 0 = Sunday, 6 = Saturday
+    const hour = easternTime.getHours();
+    const minute = easternTime.getMinutes();
+    const currentTime = hour + minute / 60;
+    
+    // Market is open Monday-Friday, 9:30 AM - 4:00 PM ET
+    const isWeekday = day >= 1 && day <= 5;
+    const isMarketHours = currentTime >= 9.5 && currentTime < 16;
+    const isMarketOpen = isWeekday && isMarketHours;
+    
+    if (isMarketOpen) {
+        statusElement.textContent = 'Market Open';
+        statusElement.className = 'status-indicator open';
+    } else {
+        statusElement.textContent = 'Market Closed';
+        statusElement.className = 'status-indicator closed';
+    }
+}
+
+async function refreshMarketIndices() {
+    console.log('Refreshing market indices...');
+    
+    const refreshButton = document.getElementById('refreshIndices');
+    if (refreshButton) {
+        refreshButton.disabled = true;
+        const icon = refreshButton.querySelector('.refresh-icon');
+        if (icon) {
+            icon.style.transform = 'rotate(360deg)';
+        }
+    }
+
+    try {
+        for (const [symbol, info] of Object.entries(MARKET_INDICES)) {
+            await updateIndexData(symbol, info);
+        }
+        
+        // Update last updated time
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+        });
+        document.getElementById('lastUpdated').textContent = timeString;
+        
+    } catch (error) {
+        console.error('Error refreshing market indices:', error);
+    } finally {
+        if (refreshButton) {
+            refreshButton.disabled = false;
+            const icon = refreshButton.querySelector('.refresh-icon');
+            if (icon) {
+                setTimeout(() => {
+                    icon.style.transform = 'rotate(0deg)';
+                }, 300);
+            }
+        }
+    }
+}
+
+async function updateIndexData(symbol, info) {
+    const symbolLower = symbol.toLowerCase();
+    const priceElement = document.getElementById(`${symbolLower}Price`);
+    const changeElement = document.getElementById(`${symbolLower}Change`);
+    
+    // Set loading state
+    if (priceElement) {
+        priceElement.textContent = 'Loading...';
+        priceElement.classList.add('loading');
+    }
+    if (changeElement) {
+        changeElement.textContent = '...';
+        changeElement.className = 'index-change loading';
+    }
+    
+    try {
+        // Try Alpha Vantage first
+        const data = await fetchIndexDataAlphaVantage(symbol);
+        updateIndexDisplay(symbol, data, info);
+    } catch (error) {
+        console.log(`Alpha Vantage failed for ${symbol}, trying Yahoo Finance...`);
+        try {
+            const data = await fetchIndexDataYahoo(symbol);
+            updateIndexDisplay(symbol, data, info);
+        } catch (yahooError) {
+            console.log(`Yahoo Finance failed for ${symbol}, using mock data...`);
+            const data = generateMockIndexData(symbol);
+            updateIndexDisplay(symbol, data, info);
+            
+            // Show subtle indicator that this is demo data
+            if (priceElement) {
+                priceElement.title = 'Demo data - add API key for real-time prices';
+            }
+        }
+    }
+}
+
+async function fetchIndexDataAlphaVantage(symbol) {
+    const apiKey = getApiKey();
+    
+    // Fetch current quote
+    const quoteUrl = `${ALPHA_VANTAGE_BASE_URL}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
+    const response = await fetch(quoteUrl);
+    
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data['Error Message']) {
+        throw new Error(data['Error Message']);
+    }
+    
+    if (data['Note']) {
+        throw new Error('API call frequency limit reached');
+    }
+    
+    const quote = data['Global Quote'];
+    if (!quote) {
+        throw new Error('No quote data available');
+    }
+    
+    return {
+        price: parseFloat(quote['05. price']),
+        change: parseFloat(quote['09. change']),
+        changePercent: parseFloat(quote['10. change percent'].replace('%', ''))
+    };
+}
+
+async function fetchIndexDataYahoo(symbol) {
+    const url = `${CORS_PROXY}${encodeURIComponent(`${YF_BASE_URL}/v8/finance/chart/${symbol}`)}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
+        throw new Error('No data available from Yahoo Finance');
+    }
+    
+    const result = data.chart.result[0];
+    const meta = result.meta;
+    const quote = meta.regularMarketPrice;
+    const previousClose = meta.previousClose;
+    
+    const change = quote - previousClose;
+    const changePercent = (change / previousClose) * 100;
+    
+    return {
+        price: quote,
+        change: change,
+        changePercent: changePercent
+    };
+}
+
+function generateMockIndexData(symbol) {
+    // Generate realistic mock data for indices
+    const basePrices = {
+        'SPY': 450,
+        'QQQ': 380,
+        'DIA': 350
+    };
+    
+    const basePrice = basePrices[symbol] || 400;
+    const variation = (Math.random() - 0.5) * 0.02; // ±1% variation
+    const price = basePrice * (1 + variation);
+    const change = basePrice * variation;
+    const changePercent = variation * 100;
+    
+    return {
+        price: price,
+        change: change,
+        changePercent: changePercent
+    };
+}
+
+function updateIndexDisplay(symbol, data, info) {
+    const symbolLower = symbol.toLowerCase();
+    const priceElement = document.getElementById(`${symbolLower}Price`);
+    const changeElement = document.getElementById(`${symbolLower}Change`);
+    
+    if (priceElement && changeElement) {
+        // Remove loading states
+        priceElement.classList.remove('loading');
+        changeElement.classList.remove('loading');
+        
+        // Update price
+        priceElement.textContent = `$${data.price.toFixed(2)}`;
+        
+        // Update change
+        const changeText = `${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)} (${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%)`;
+        changeElement.textContent = changeText;
+        
+        // Update change styling
+        changeElement.className = 'index-change';
+        if (data.change >= 0) {
+            changeElement.classList.add('positive');
+        } else {
+            changeElement.classList.add('negative');
+        }
+    }
+}
+
+async function loadIndexChart(symbol, name) {
+    console.log(`Loading chart for ${name} (${symbol})`);
+    
+    // Highlight the active index card
+    highlightActiveIndex(symbol);
+    
+    // Switch to single mode if in comparison mode
+    const comparisonMode = document.getElementById('comparisonMode');
+    if (comparisonMode && comparisonMode.checked) {
+        comparisonMode.checked = false;
+        toggleComparisonMode();
+    }
+    
+    // Set the symbol in the input field
+    document.getElementById('companySymbol').value = symbol;
+    
+    // Set default time range to 30 days for indices
+    document.getElementById('timeRange').value = '30';
+    
+    // Trigger the search
+    await searchStock();
+}
+
+function highlightActiveIndex(activeSymbol) {
+    // Remove active class from all index cards
+    document.querySelectorAll('.index-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
+    // Add active class to the selected index card
+    const activeCard = document.querySelector(`.index-card[data-index="${activeSymbol}"]`);
+    if (activeCard) {
+        activeCard.classList.add('active');
+    }
+}
+
+function clearActiveIndex() {
+    // Remove active class from all index cards
+    document.querySelectorAll('.index-card').forEach(card => {
+        card.classList.remove('active');
+    });
 }
