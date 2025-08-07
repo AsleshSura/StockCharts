@@ -10,7 +10,12 @@
     </head>
     <body>
         <div class="container">
-            <h1>Stock Chart Visualizer</h1>
+            <div class="header">
+                <h1>Stock Chart Visualizer</h1>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
 
             <div class="info-section">
                 <h3>Stock Chart Visualizer</h3>
@@ -26,22 +31,76 @@
                 </div>
             </div>
 
+            <div class="mode-section">
+                <div class="mode-toggle">
+                    <span class="mode-option" id="singleLabel">Single</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="comparisonMode">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="mode-option" id="compareLabel">Compare</span>
+                </div>
+                <div class="mode-description">
+                    <span id="modeDescription">View individual stock charts</span>
+                </div>
+            </div>
+
             <div class="search-section">
-                <div class="input-group">
-                    <div class="form-group">
-                        <label for="companySymbol">Stock Symbol:</label>
-                        <input type="text" id="companySymbol" placeholder="TSLA" maxlength="10">
+                <!-- Single Chart Mode -->
+                <div id="singleMode" class="mode-container">
+                    <div class="input-group">
+                        <div class="form-group">
+                            <label for="companySymbol">Stock Symbol:</label>
+                            <input type="text" id="companySymbol" placeholder="TSLA" maxlength="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="timeRange">Time Range:</label>
+                            <select id="timeRange">
+                                <option value="7" selected>Last 7 days</option>
+                                <option value="30">Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                                <option value="365">Last year</option>
+                            </select>
+                        </div>
+                        <button id="searchButton" onclick="searchStock()">Set Chart</button>
                     </div>
-                    <div class="form-group">
-                        <label form="timeRange">Time Range:</label>
-                        <select id="timeRange">
-                            <option value="7" selected>Last 7 days</option>
-                            <option value="30">Last 30 days</option>
-                            <option value="90">Last 90 days</option>
-                            <option value="365">Last year</option>
-                        </select>
+                </div>
+
+                <!-- Comparison Mode -->
+                <div id="comparisonModeContainer" class="mode-container comparison-mode" style="display: none;">
+                    <div class="comparison-inputs">
+                        <div class="stock-input-group">
+                            <h4>Stock A</h4>
+                            <div class="input-group">
+                                <div class="form-group">
+                                    <label for="symbolA">Symbol:</label>
+                                    <input type="text" id="symbolA" placeholder="AAPL" maxlength="10">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="vs-divider">VS</div>
+                        <div class="stock-input-group">
+                            <h4>Stock B</h4>
+                            <div class="input-group">
+                                <div class="form-group">
+                                    <label for="symbolB">Symbol:</label>
+                                    <input type="text" id="symbolB" placeholder="GOOGL" maxlength="10">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <button id="searchButton" onclick="searchStock()">Set Chart</button>
+                    <div class="comparison-controls">
+                        <div class="form-group">
+                            <label for="comparisonTimeRange">Time Range:</label>
+                            <select id="comparisonTimeRange">
+                                <option value="7" selected>Last 7 days</option>
+                                <option value="30">Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                                <option value="365">Last year</option>
+                            </select>
+                        </div>
+                        <button id="compareButton" onclick="compareStocks()">Compare Stocks</button>
+                    </div>
                 </div>
             </div>
 
@@ -53,31 +112,87 @@
                     <p>Loading stock data...</p>
                 </div>
 
-                <div id="stockInfo" class="stock-info">
-                    <div class="info-card">
-                        <div class="info-label">Company</div>
-                        <div id="companyName" class="info-value">-</div>
+                <!-- Single Chart Mode -->
+                <div id="singleChartContainer" class="single-chart-container">
+                    <div id="stockInfo" class="stock-info">
+                        <div class="info-card">
+                            <div class="info-label">Company</div>
+                            <div id="companyName" class="info-value">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Current Price</div>
+                            <div id="currentPrice" class="info-value">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Change</div>
+                            <div id="priceChange" class="info-value price-change">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">High</div>
+                            <div id="dayHigh" class="info-value">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Low</div>
+                            <div id="dayLow" class="info-value">-</div>
+                        </div>
                     </div>
-                    <div class="info-card">
-                        <div class="info-label">Current Price</div>
-                        <div id="currentPrice" class="info-value">-</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Change</div>
-                        <div id="priceChange" class="info-value price-change">-</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">High</div>
-                        <div id="dayHigh" class="info-value">-</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Low</div>
-                        <div id="dayLow" class="info-value">-</div>
+
+                    <div class="chart-container">
+                        <canvas id="stockChart"></canvas>
                     </div>
                 </div>
 
-                <div class="chart-container">
-                    <canvas id="stockChart"></canvas>
+                <!-- Comparison Mode -->
+                <div id="comparisonChartContainer" class="comparison-chart-container" style="display: none;">
+                    <div class="comparison-info">
+                        <div class="stock-info-side">
+                            <h4 id="stockATitle">Stock A</h4>
+                            <div id="stockInfoA" class="stock-info">
+                                <div class="info-card">
+                                    <div class="info-label">Company</div>
+                                    <div id="companyNameA" class="info-value">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-label">Current Price</div>
+                                    <div id="currentPriceA" class="info-value">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-label">Change</div>
+                                    <div id="priceChangeA" class="info-value price-change">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stock-info-side">
+                            <h4 id="stockBTitle">Stock B</h4>
+                            <div id="stockInfoB" class="stock-info">
+                                <div class="info-card">
+                                    <div class="info-label">Company</div>
+                                    <div id="companyNameB" class="info-value">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-label">Current Price</div>
+                                    <div id="currentPriceB" class="info-value">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-label">Change</div>
+                                    <div id="priceChangeB" class="info-value price-change">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="comparison-charts">
+                        <div class="chart-side">
+                            <div class="chart-container">
+                                <canvas id="stockChartA"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-side">
+                            <div class="chart-container">
+                                <canvas id="stockChartB"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
