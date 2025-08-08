@@ -123,9 +123,36 @@ function isValidStockSymbol(symbol) {
     // Remove whitespace and convert to uppercase
     const cleanSymbol = symbol.trim().toUpperCase();
     
-    // Check if it's between 1-5 characters and contains only letters
+    // Check if it's a cryptocurrency symbol (contains -USD)
+    if (cleanSymbol.includes('-USD')) {
+        const cryptoRegex = /^[A-Z]{3,4}-USD$/;
+        return cryptoRegex.test(cleanSymbol);
+    }
+    
+    // Check if it's between 1-5 characters and contains only letters for regular stocks
     const symbolRegex = /^[A-Z]{1,5}$/;
     return symbolRegex.test(cleanSymbol);
+}
+
+// Check if a symbol is a cryptocurrency
+function isCryptocurrency(symbol) {
+    if (!symbol || typeof symbol !== 'string') {
+        return false;
+    }
+    
+    // Convert to uppercase and check if it ends with -USD
+    const cleanSymbol = symbol.trim().toUpperCase();
+    return cleanSymbol.includes('-USD');
+}
+
+// Check if a symbol is a cryptocurrency
+function isCryptocurrency(symbol) {
+    if (!symbol || typeof symbol !== 'string') {
+        return false;
+    }
+    
+    const cleanSymbol = symbol.trim().toUpperCase();
+    return cleanSymbol.includes('-USD') || cleanSymbol.includes('USDT') || cleanSymbol.includes('BTC') || cleanSymbol.includes('ETH');
 }
 
 // Format error messages for better display
@@ -178,5 +205,6 @@ function clearStockInfo() {
 
 // Export functions for global use
 window.isValidStockSymbol = isValidStockSymbol;
+window.isCryptocurrency = isCryptocurrency;
 window.formatErrorMessage = formatErrorMessage;
 window.clearStockInfo = clearStockInfo;

@@ -58,13 +58,16 @@ async function searchStock() {
 
     // Validate symbol format if utils.js is loaded
     if (typeof isValidStockSymbol === 'function' && !isValidStockSymbol(symbol)) {
-        showError('Please enter a valid stock symbol (1-5 letters)');
+        showError('Please enter a valid stock symbol (1-5 letters) or cryptocurrency (e.g., BTC-USD)');
         return;
     }
 
-    // Clear active index highlighting if searching for a non-index symbol
+    // Clear active index and crypto highlighting if searching for a different symbol
     if (!MARKET_INDICES[symbol]) {
         clearActiveIndex();
+    }
+    if (!CRYPTOCURRENCIES[symbol]) {
+        clearActiveCrypto();
     }
 
     showLoading();
@@ -107,81 +110,163 @@ async function searchStock() {
 }
 
 async function searchStockAlphaVantage(symbol, timeRange) {
-    // Get daily time series data
     const apiKey = getApiKey();
-    const url = `${ALPHA_VANTAGE_BASE_URL}?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact`;
+    let url, timeSeries;
     
-    console.log('Fetching from Alpha Vantage:', url);
-    
-    const timeSeriesResponse = await fetch(url);
-    
-    if (!timeSeriesResponse.ok) {
-        throw new Error(`Alpha Vantage HTTP error: ${timeSeriesResponse.status} ${timeSeriesResponse.statusText}`);
-    }
-    
-    const timeSeriesData = await timeSeriesResponse.json();
-    console.log('Alpha Vantage response:', timeSeriesData);
-    
-    // Check for various Alpha Vantage error conditions
-    if (timeSeriesData['Error Message']) {
-        throw new Error(`Alpha Vantage Error: ${timeSeriesData['Error Message']}`);
-    }
-    
-    if (timeSeriesData['Note']) {
-        throw new Error(`Alpha Vantage Rate Limit: ${timeSeriesData['Note']}`);
-    }
-    
-    if (timeSeriesData['Information']) {
-        throw new Error(`Alpha Vantage Info: ${timeSeriesData['Information']}`);
-    }
-    
-    if (!timeSeriesData['Time Series (Daily)']) {
-        throw new Error('No time series data available');
-    }
-    
-    // Process Alpha Vantage data
-    const timeSeries = timeSeriesData['Time Series (Daily)'];
-    const dates = Object.keys(timeSeries).sort().slice(-timeRange);
-    
-    const labels = [];
-    const prices = [];
-    
-    dates.forEach(date => {
-        labels.push(new Date(date).toLocaleDateString());
-        prices.push(parseFloat(timeSeries[date]['4. close']));
-    });
-    
-    const currentPrice = prices[prices.length - 1];
-    const previousPrice = prices[prices.length - 2] || currentPrice;
-    
-    // Create mock quote data
-    const quote = {
-        longName: symbol + ' Inc.',
-        shortName: symbol,
-        regularMarketPrice: currentPrice,
-        regularMarketPreviousClose: previousPrice,
-        regularMarketDayHigh: Math.max(...prices.slice(-5)),
-        regularMarketDayLow: Math.min(...prices.slice(-5))
-    };
-    
-    // Create mock chart result
-    const chartResult = {
-        meta: {
-            regularMarketPrice: currentPrice,
-            previousClose: previousPrice,
-            regularMarketDayHigh: quote.regularMarketDayHigh,
-            regularMarketDayLow: quote.regularMarketDayLow
-        },
-        timestamp: dates.map(date => new Date(date).getTime() / 1000),
-        indicators: {
-            quote: [{
-                close: prices
-            }]
+    // Check if it's a cryptocurrency
+    if (typeof isCryptocurrency === 'function' && isCryptocurrency(symbol)) {
+        // For cryptocurrencies, use Alpha Vantage digital currency API
+        const cryptoSymbol = symbol.replace('-USD', '');
+        url = `${ALPHA_VANTAGE_BASE_URL}?function=DIGITAL_CURRENCY_DAILY&symbol=${cryptoSymbol}&market=USD&apikey=${apiKey}`;
+        
+        console.log('Fetching crypto data from Alpha Vantage:', url);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Alpha Vantage HTTP error: ${response.status} ${response.statusText}`);
         }
-    };
-    
-    updateStockInfo(chartResult, quote, symbol);
-    createChart(chartResult, quote.longName);
+        
+        const data = await response.json();
+        console.log('Alpha Vantage crypto response:', data);
+        
+        // Check for errors
+        if (data['Error Message']) {
+            throw new Error(`Alpha Vantage Error: ${data['Error Message']}`);
+        }
+        if (data['Note']) {
+            throw new Error(`Alpha Vantage Rate Limit: ${data['Note']}`);
+        }
+        if (data['Information']) {
+            throw new Error(`Alpha Vantage Info: ${data['Information']}`);
+        }
+        
+        timeSeries = data['Time Series (Digital Currency Daily)'];
+        if (!timeSeries) {
+            throw new Error('No cryptocurrency time series data available');
+        }
+        
+        // Process crypto data (different format)
+        const dates = Object.keys(timeSeries).sort().slice(-timeRange);
+        const labels = [];
+        const prices = [];
+        
+        dates.forEach(date => {
+            const dayData = timeSeries[date];
+            labels.push(date);
+            prices.push(parseFloat(dayData['4a. close (USD)']));
+        });
+        
+        // Get current price info
+        const latestDate = dates[dates.length - 1];
+        const latestData = timeSeries[latestDate];
+        const currentPrice = parseFloat(latestData['4a. close (USD)']);
+        const previousPrice = dates.length > 1 ? parseFloat(timeSeries[dates[dates.length - 2]]['4a. close (USD)']) : currentPrice;
+        
+        // Create mock quote data for crypto
+        const quote = {
+            longName: CRYPTOCURRENCIES[symbol]?.fullName || symbol,
+            shortName: symbol,
+            regularMarketPrice: currentPrice,
+            regularMarketPreviousClose: previousPrice,
+            regularMarketDayHigh: parseFloat(latestData['2a. high (USD)']),
+            regularMarketDayLow: parseFloat(latestData['3a. low (USD)'])
+        };
+        
+        // Create mock chart result for crypto
+        const chartResult = {
+            meta: {
+                regularMarketPrice: currentPrice,
+                previousClose: previousPrice,
+                regularMarketDayHigh: quote.regularMarketDayHigh,
+                regularMarketDayLow: quote.regularMarketDayLow
+            },
+            timestamp: dates.map(date => new Date(date).getTime() / 1000),
+            indicators: {
+                quote: [{
+                    close: prices
+                }]
+            }
+        };
+        
+        updateStockInfo(chartResult, quote, symbol);
+        createChart(chartResult, quote.longName);
+        
+    } else {
+        // For regular stocks, use time series daily
+        url = `${ALPHA_VANTAGE_BASE_URL}?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact`;
+        
+        console.log('Fetching stock data from Alpha Vantage:', url);
+        
+        const timeSeriesResponse = await fetch(url);
+        
+        if (!timeSeriesResponse.ok) {
+            throw new Error(`Alpha Vantage HTTP error: ${timeSeriesResponse.status} ${timeSeriesResponse.statusText}`);
+        }
+        
+        const timeSeriesData = await timeSeriesResponse.json();
+        console.log('Alpha Vantage response:', timeSeriesData);
+        
+        // Check for various Alpha Vantage error conditions
+        if (timeSeriesData['Error Message']) {
+            throw new Error(`Alpha Vantage Error: ${timeSeriesData['Error Message']}`);
+        }
+        
+        if (timeSeriesData['Note']) {
+            throw new Error(`Alpha Vantage Rate Limit: ${timeSeriesData['Note']}`);
+        }
+        
+        if (timeSeriesData['Information']) {
+            throw new Error(`Alpha Vantage Info: ${timeSeriesData['Information']}`);
+        }
+        
+        if (!timeSeriesData['Time Series (Daily)']) {
+            throw new Error('No time series data available');
+        }
+        
+        // Process Alpha Vantage stock data
+        timeSeries = timeSeriesData['Time Series (Daily)'];
+        const dates = Object.keys(timeSeries).sort().slice(-timeRange);
+        
+        const labels = [];
+        const prices = [];
+        
+        dates.forEach(date => {
+            labels.push(new Date(date).toLocaleDateString());
+            prices.push(parseFloat(timeSeries[date]['4. close']));
+        });
+        
+        const currentPrice = prices[prices.length - 1];
+        const previousPrice = prices[prices.length - 2] || currentPrice;
+        
+        // Create mock quote data
+        const quote = {
+            longName: symbol + ' Inc.',
+            shortName: symbol,
+            regularMarketPrice: currentPrice,
+            regularMarketPreviousClose: previousPrice,
+            regularMarketDayHigh: Math.max(...prices.slice(-5)),
+            regularMarketDayLow: Math.min(...prices.slice(-5))
+        };
+        
+        // Create mock chart result
+        const chartResult = {
+            meta: {
+                regularMarketPrice: currentPrice,
+                previousClose: previousPrice,
+                regularMarketDayHigh: quote.regularMarketDayHigh,
+                regularMarketDayLow: quote.regularMarketDayLow
+            },
+            timestamp: dates.map(date => new Date(date).getTime() / 1000),
+            indicators: {
+                quote: [{
+                    close: prices
+                }]
+            }
+        };
+        
+        updateStockInfo(chartResult, quote, symbol);
+        createChart(chartResult, quote.longName);
+    }
 }
 
 async function searchStockYahoo(symbol, timeRange) {
@@ -893,7 +978,26 @@ function processYahooFinanceData(result, symbol) {
 
 // Helper function to generate mock data
 async function generateMockStockData(symbol, timeRange) {
-    const basePrice = Math.random() * 200 + 50; // Random price between 50-250
+    let basePrice;
+    let companyName;
+    
+    // Set appropriate base prices for cryptocurrencies
+    if (typeof isCryptocurrency === 'function' && isCryptocurrency(symbol)) {
+        const cryptoPrices = {
+            'BTC-USD': 45000,
+            'ETH-USD': 3000,
+            'BNB-USD': 320,
+            'XRP-USD': 0.62,
+            'ADA-USD': 0.48,
+            'DOT-USD': 7.5
+        };
+        basePrice = cryptoPrices[symbol] || 100;
+        companyName = CRYPTOCURRENCIES[symbol]?.fullName || symbol;
+    } else {
+        basePrice = Math.random() * 200 + 50; // Random price between 50-250 for stocks
+        companyName = `${symbol} Corporation`;
+    }
+    
     const mockData = [];
     const dates = [];
     
@@ -902,8 +1006,11 @@ async function generateMockStockData(symbol, timeRange) {
         date.setDate(date.getDate() - i);
         dates.push(date.toISOString().split('T')[0]);
         
-        const variation = (Math.random() - 0.5) * 10; // ±5 variation
-        const price = Math.max(1, basePrice + variation);
+        // Crypto has higher volatility
+        const isSymbolCrypto = (typeof isCryptocurrency === 'function' && isCryptocurrency(symbol));
+        const volatility = isSymbolCrypto ? 0.05 : 0.02; // 5% vs 2%
+        const variation = (Math.random() - 0.5) * basePrice * volatility;
+        const price = Math.max(basePrice * 0.1, basePrice + variation); // Don't go below 10% of base
         
         mockData.push({
             date: date.toISOString().split('T')[0],
@@ -919,7 +1026,7 @@ async function generateMockStockData(symbol, timeRange) {
         symbol: symbol,
         prices: mockData,
         currentPrice: mockData[mockData.length - 1].close,
-        companyName: `${symbol} Corporation`,
+        companyName: companyName,
         change: mockData.length > 1 ? 
             mockData[mockData.length - 1].close - mockData[mockData.length - 2].close : 0
     };
@@ -1059,13 +1166,25 @@ const MARKET_INDICES = {
     'DIA': { name: 'Dow Jones', fullName: 'SPDR Dow Jones Industrial Average ETF' }
 };
 
-// Initialize market indices on page load
+// Cryptocurrency Functionality
+const CRYPTOCURRENCIES = {
+    'BTC-USD': { name: 'Bitcoin', symbol: 'BTC', fullName: 'Bitcoin' },
+    'ETH-USD': { name: 'Ethereum', symbol: 'ETH', fullName: 'Ethereum' },
+    'BNB-USD': { name: 'Binance Coin', symbol: 'BNB', fullName: 'Binance Coin' },
+    'XRP-USD': { name: 'Ripple', symbol: 'XRP', fullName: 'Ripple' },
+    'ADA-USD': { name: 'Cardano', symbol: 'ADA', fullName: 'Cardano' },
+    'DOT-USD': { name: 'Polkadot', symbol: 'DOT', fullName: 'Polkadot' }
+};
+
+// Initialize market indices and crypto on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateMarketStatus();
     refreshMarketIndices();
+    refreshCryptocurrencies();
     
-    // Auto-refresh indices every 5 minutes
+    // Auto-refresh indices and crypto every 5 minutes
     setInterval(refreshMarketIndices, 5 * 60 * 1000);
+    setInterval(refreshCryptocurrencies, 5 * 60 * 1000);
     
     // Update market status every minute
     setInterval(updateMarketStatus, 60 * 1000);
@@ -1323,6 +1442,193 @@ function highlightActiveIndex(activeSymbol) {
 function clearActiveIndex() {
     // Remove active class from all index cards
     document.querySelectorAll('.index-card').forEach(card => {
+        card.classList.remove('active');
+    });
+}
+
+// Cryptocurrency Functionality
+async function refreshCryptocurrencies() {
+    console.log('Refreshing cryptocurrencies...');
+    
+    // Update last updated time
+    const now = new Date();
+    document.getElementById('lastUpdatedCrypto').textContent = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    
+    try {
+        for (const [symbol, info] of Object.entries(CRYPTOCURRENCIES)) {
+            await updateCryptoData(symbol, info);
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    } catch (error) {
+        console.error('Error refreshing cryptocurrencies:', error);
+    }
+}
+
+async function updateCryptoData(symbol, info) {
+    const symbolId = symbol.toLowerCase().replace('-usd', '');
+    const priceElement = document.getElementById(`${symbolId}Price`);
+    const changeElement = document.getElementById(`${symbolId}Change`);
+    
+    // Set loading state
+    if (priceElement) {
+        priceElement.textContent = 'Loading...';
+        priceElement.classList.add('loading');
+    }
+    if (changeElement) {
+        changeElement.textContent = '...';
+        changeElement.className = 'crypto-change loading';
+    }
+    
+    try {
+        // Try Yahoo Finance for crypto data
+        const data = await fetchCryptoDataYahoo(symbol);
+        updateCryptoDisplay(symbol, data, info);
+    } catch (error) {
+        console.log(`Yahoo Finance failed for ${symbol}, using mock data...`);
+        const data = generateMockCryptoData(symbol);
+        updateCryptoDisplay(symbol, data, info);
+        
+        // Show subtle indicator that this is demo data
+        if (priceElement) {
+            priceElement.title = 'Demo data - live crypto prices vary significantly';
+        }
+    }
+}
+
+async function fetchCryptoDataYahoo(symbol) {
+    try {
+        const url = `${CORS_PROXY}${encodeURIComponent(`${YF_BASE_URL}/v8/finance/chart/${symbol}`)}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
+            throw new Error('Invalid data structure from Yahoo Finance');
+        }
+        
+        const result = data.chart.result[0];
+        const meta = result.meta;
+        
+        if (!meta || typeof meta.regularMarketPrice !== 'number') {
+            throw new Error('Missing price data');
+        }
+        
+        const currentPrice = meta.regularMarketPrice;
+        const previousClose = meta.previousClose || meta.chartPreviousClose;
+        const change = currentPrice - previousClose;
+        const changePercent = (change / previousClose) * 100;
+        
+        return {
+            price: currentPrice,
+            change: change,
+            changePercent: changePercent
+        };
+    } catch (error) {
+        console.error('Error fetching crypto data from Yahoo Finance:', error);
+        throw error;
+    }
+}
+
+function generateMockCryptoData(symbol) {
+    // Generate realistic mock data for cryptocurrencies
+    const basePrices = {
+        'BTC-USD': 45000,
+        'ETH-USD': 3000,
+        'BNB-USD': 320,
+        'XRP-USD': 0.62,
+        'ADA-USD': 0.48,
+        'DOT-USD': 7.5
+    };
+    
+    const basePrice = basePrices[symbol] || 100;
+    const variation = (Math.random() - 0.5) * 0.08; // ±4% variation (crypto is more volatile)
+    const price = basePrice * (1 + variation);
+    const change = basePrice * variation;
+    const changePercent = variation * 100;
+    
+    return {
+        price: price,
+        change: change,
+        changePercent: changePercent
+    };
+}
+
+function updateCryptoDisplay(symbol, data, info) {
+    const symbolId = symbol.toLowerCase().replace('-usd', '');
+    const priceElement = document.getElementById(`${symbolId}Price`);
+    const changeElement = document.getElementById(`${symbolId}Change`);
+    
+    if (priceElement && changeElement) {
+        // Remove loading states
+        priceElement.classList.remove('loading');
+        changeElement.classList.remove('loading');
+        
+        // Update price with appropriate decimal places
+        let priceText;
+        if (data.price < 1) {
+            priceText = `$${data.price.toFixed(4)}`;
+        } else if (data.price < 100) {
+            priceText = `$${data.price.toFixed(2)}`;
+        } else {
+            priceText = `$${data.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+        }
+        priceElement.textContent = priceText;
+        
+        // Update change
+        const changeText = `${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)} (${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%)`;
+        changeElement.textContent = changeText;
+        
+        // Update change styling
+        changeElement.className = 'crypto-change';
+        if (data.change >= 0) {
+            changeElement.classList.add('positive');
+        } else {
+            changeElement.classList.add('negative');
+        }
+    }
+}
+
+async function loadCryptoChart(symbol, name) {
+    console.log(`Loading chart for ${name} (${symbol})`);
+    
+    // Clear any existing error messages
+    hideError();
+    
+    // Set the symbol in the input field
+    document.getElementById('companySymbol').value = symbol;
+    
+    // Highlight the active crypto card
+    highlightActiveCrypto(symbol);
+    
+    // Load the chart using the existing search function
+    await searchStock();
+}
+
+function highlightActiveCrypto(activeSymbol) {
+    // Remove active class from all crypto cards
+    document.querySelectorAll('.crypto-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
+    // Add active class to the selected crypto card
+    const activeCard = document.querySelector(`.crypto-card[data-crypto="${activeSymbol}"]`);
+    if (activeCard) {
+        activeCard.classList.add('active');
+    }
+}
+
+function clearActiveCrypto() {
+    // Remove active class from all crypto cards
+    document.querySelectorAll('.crypto-card').forEach(card => {
         card.classList.remove('active');
     });
 }

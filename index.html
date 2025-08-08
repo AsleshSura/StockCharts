@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Stock Chart Viewer</title>
+        <title>Stock & Crypto Chart Viewer</title>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
         <link rel="stylesheet" href="style.css">
@@ -11,15 +11,15 @@
     <body>
         <div class="container">
             <div class="header">
-                <h1>Stock Chart Visualizer</h1>
+                <h1>Stock & Crypto Chart Visualizer</h1>
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
                     <span class="theme-icon">🌙</span>
                 </button>
             </div>
 
             <div class="info-section">
-                <h3>Stock Chart Visualizer</h3>
-                <p>Get stock data and interactive charts for any publicly traded company.</p>
+                <h3>Stock & Crypto Chart Visualizer</h3>
+                <p>Get stock data and interactive charts for any publicly traded company, plus major cryptocurrencies like Bitcoin and Ethereum.</p>
                 <p><small><em>Note: Enter your API key below for real-time data, or leave empty to use demo data. Get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a>.</em></small></p>
             </div>
 
@@ -77,6 +77,99 @@
                 </div>
             </div>
 
+            <!-- Cryptocurrency Section -->
+            <div class="crypto-section">
+                <div class="crypto-header">
+                    <h3>Major Cryptocurrencies</h3>
+                    <div class="crypto-status">
+                        <span class="status-indicator" id="cryptoStatus">24/7 Trading</span>
+                    </div>
+                </div>
+                <div class="crypto-container">
+                    <div class="crypto-card" data-crypto="BTC-USD" onclick="loadCryptoChart('BTC-USD', 'Bitcoin')">
+                        <div class="crypto-header-card">
+                            <h4>Bitcoin</h4>
+                            <span class="crypto-symbol">BTC</span>
+                        </div>
+                        <div class="crypto-value">
+                            <span class="crypto-price" id="btcPrice">Loading...</span>
+                            <span class="crypto-change" id="btcChange">-</span>
+                        </div>
+                        <button class="crypto-chart-btn" onclick="event.stopPropagation(); loadCryptoChart('BTC-USD', 'Bitcoin')">View Chart</button>
+                    </div>
+                    
+                    <div class="crypto-card" data-crypto="ETH-USD" onclick="loadCryptoChart('ETH-USD', 'Ethereum')">
+                        <div class="crypto-header-card">
+                            <h4>Ethereum</h4>
+                            <span class="crypto-symbol">ETH</span>
+                        </div>
+                        <div class="crypto-value">
+                            <span class="crypto-price" id="ethPrice">Loading...</span>
+                            <span class="crypto-change" id="ethChange">-</span>
+                        </div>
+                        <button class="crypto-chart-btn" onclick="event.stopPropagation(); loadCryptoChart('ETH-USD', 'Ethereum')">View Chart</button>
+                    </div>
+                    
+                    <div class="crypto-card" data-crypto="BNB-USD" onclick="loadCryptoChart('BNB-USD', 'Binance Coin')">
+                        <div class="crypto-header-card">
+                            <h4>Binance Coin</h4>
+                            <span class="crypto-symbol">BNB</span>
+                        </div>
+                        <div class="crypto-value">
+                            <span class="crypto-price" id="bnbPrice">Loading...</span>
+                            <span class="crypto-change" id="bnbChange">-</span>
+                        </div>
+                        <button class="crypto-chart-btn" onclick="event.stopPropagation(); loadCryptoChart('BNB-USD', 'Binance Coin')">View Chart</button>
+                    </div>
+                    
+                    <div class="crypto-card" data-crypto="XRP-USD" onclick="loadCryptoChart('XRP-USD', 'Ripple')">
+                        <div class="crypto-header-card">
+                            <h4>Ripple</h4>
+                            <span class="crypto-symbol">XRP</span>
+                        </div>
+                        <div class="crypto-value">
+                            <span class="crypto-price" id="xrpPrice">Loading...</span>
+                            <span class="crypto-change" id="xrpChange">-</span>
+                        </div>
+                        <button class="crypto-chart-btn" onclick="event.stopPropagation(); loadCryptoChart('XRP-USD', 'Ripple')">View Chart</button>
+                    </div>
+                    
+                    <div class="crypto-card" data-crypto="ADA-USD" onclick="loadCryptoChart('ADA-USD', 'Cardano')">
+                        <div class="crypto-header-card">
+                            <h4>Cardano</h4>
+                            <span class="crypto-symbol">ADA</span>
+                        </div>
+                        <div class="crypto-value">
+                            <span class="crypto-price" id="adaPrice">Loading...</span>
+                            <span class="crypto-change" id="adaChange">-</span>
+                        </div>
+                        <button class="crypto-chart-btn" onclick="event.stopPropagation(); loadCryptoChart('ADA-USD', 'Cardano')">View Chart</button>
+                    </div>
+                    
+                    <div class="crypto-card" data-crypto="DOT-USD" onclick="loadCryptoChart('DOT-USD', 'Polkadot')">
+                        <div class="crypto-header-card">
+                            <h4>Polkadot</h4>
+                            <span class="crypto-symbol">DOT</span>
+                        </div>
+                        <div class="crypto-value">
+                            <span class="crypto-price" id="dotPrice">Loading...</span>
+                            <span class="crypto-change" id="dotChange">-</span>
+                        </div>
+                        <button class="crypto-chart-btn" onclick="event.stopPropagation(); loadCryptoChart('DOT-USD', 'Polkadot')">View Chart</button>
+                    </div>
+                </div>
+                <div class="crypto-refresh">
+                    <button id="refreshCrypto" onclick="refreshCryptocurrencies()">
+                        <span class="refresh-icon">↻</span>
+                        Refresh Crypto
+                    </button>
+                    <span class="last-updated-crypto">Last updated: <span id="lastUpdatedCrypto">-</span></span>
+                </div>
+                <div class="crypto-note">
+                    <p><small><em>💡 <strong>Tip:</strong> You can also type crypto symbols directly in the search box (e.g., BTC-USD, ETH-USD, ADA-USD)</em></small></p>
+                </div>
+            </div>
+
             <div class="api-section">
                 <div class="form-group">
                     <label for="apiKey">Alpha Vantage API Key (Optional):</label>
@@ -104,8 +197,8 @@
                 <div id="singleMode" class="mode-container">
                     <div class="input-group">
                         <div class="form-group">
-                            <label for="companySymbol">Stock Symbol:</label>
-                            <input type="text" id="companySymbol" placeholder="TSLA" maxlength="10">
+                            <label for="companySymbol">Symbol:</label>
+                            <input type="text" id="companySymbol" placeholder="TSLA, BTC-USD, ETH-USD" maxlength="10">
                         </div>
                         <div class="form-group">
                             <label for="timeRange">Time Range:</label>
@@ -128,7 +221,7 @@
                             <div class="input-group">
                                 <div class="form-group">
                                     <label for="symbolA">Symbol:</label>
-                                    <input type="text" id="symbolA" placeholder="AAPL" maxlength="10">
+                                    <input type="text" id="symbolA" placeholder="AAPL, BTC-USD" maxlength="10">
                                 </div>
                             </div>
                         </div>
@@ -138,7 +231,7 @@
                             <div class="input-group">
                                 <div class="form-group">
                                     <label for="symbolB">Symbol:</label>
-                                    <input type="text" id="symbolB" placeholder="GOOGL" maxlength="10">
+                                    <input type="text" id="symbolB" placeholder="GOOGL, ETH-USD" maxlength="10">
                                 </div>
                             </div>
                         </div>

@@ -1,10 +1,10 @@
-# Stock Chart Visualizer
+# Stock & Crypto Chart Visualizer
 
-A comprehensive web application for visualizing stock market data with interactive charts, market indices tracking, and stock comparison capabilities. Built with vanilla JavaScript, Chart.js, and modern CSS.
+A comprehensive web application for visualizing stock market data and cryptocurrency prices with interactive charts, market indices tracking, cryptocurrency dashboard, and comparison capabilities. Built with vanilla JavaScript, Chart.js, and modern CSS.
 
 🔗 **Live Demo**: [https://asleshsura.github.io/StockCharts](https://asleshsura.github.io/StockCharts)
 
-![Stock Chart Visualizer](https://img.shields.io/badge/Status-Live-brightgreen) ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow) ![Chart.js](https://img.shields.io/badge/Chart.js-4.0+-orange) ![CSS3](https://img.shields.io/badge/CSS3-Modern-blue)
+![Stock Chart Visualizer](https://img.shields.io/badge/Status-Live-brightgreen) ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow) ![Chart.js](https://img.shields.io/badge/Chart.js-4.0+-orange) ![CSS3](https://img.shields.io/badge/CSS3-Modern-blue) ![Crypto](https://img.shields.io/badge/Crypto-Supported-orange)
 
 ## ✨ Features
 
@@ -14,6 +14,13 @@ A comprehensive web application for visualizing stock market data with interacti
 - **Real-time stock data** from Alpha Vantage API
 - **Fallback data sources** including Yahoo Finance and demo data
 - **Responsive design** that works on desktop, tablet, and mobile devices
+
+### ₿ Cryptocurrency Support
+- **Major cryptocurrencies** including Bitcoin (BTC), Ethereum (ETH), Binance Coin (BNB), Ripple (XRP), Cardano (ADA), and Polkadot (DOT)
+- **Real-time crypto prices** with 24/7 market status
+- **Crypto-optimized charts** with appropriate volatility modeling
+- **Direct crypto symbol input** (e.g., BTC-USD, ETH-USD)
+- **Live cryptocurrency dashboard** with price tracking and percentage changes
 
 ### 📈 Market Indices Dashboard
 - **Live market indices tracking** for major US markets:
@@ -88,24 +95,33 @@ A comprehensive web application for visualizing stock market data with interacti
 
 ## 📖 Usage Guide
 
-### Basic Stock Search
-1. Enter a stock symbol (e.g., AAPL, TSLA, GOOGL) in the search field
+### Basic Stock & Crypto Search
+1. Enter a stock symbol (e.g., AAPL, TSLA, GOOGL) or cryptocurrency symbol (e.g., BTC-USD, ETH-USD) in the search field
 2. Select your preferred time range
 3. Click "Set Chart" or press Enter
-4. View the interactive chart with stock information
+4. View the interactive chart with stock/crypto information
 
-### Market Indices
+### Supported Cryptocurrencies
+- **Bitcoin (BTC-USD)** - The original cryptocurrency
+- **Ethereum (ETH-USD)** - Smart contract platform
+- **Binance Coin (BNB-USD)** - Binance exchange token
+- **Ripple (XRP-USD)** - Cross-border payment solution
+- **Cardano (ADA-USD)** - Proof-of-stake blockchain
+- **Polkadot (DOT-USD)** - Multi-chain interoperability
+
+### Market Indices & Cryptocurrency Dashboard
 - View live prices for S&P 500, NASDAQ, and Dow Jones
-- Click on any index card to view its detailed chart
-- Use the refresh button to manually update prices
-- Monitor market status (Open/Closed) in real-time
+- Monitor major cryptocurrency prices with 24/7 market status
+- Click on any index or crypto card to view its detailed chart
+- Use the refresh buttons to manually update prices
+- Monitor market status (Open/Closed for stocks, 24/7 for crypto)
 
-### Stock Comparison
+### Stock & Crypto Comparison
 1. Toggle the comparison mode switch
-2. Enter two different stock symbols
+2. Enter two different symbols (stocks or cryptocurrencies)
 3. Select the time range for comparison
 4. Click "Compare Stocks" to view side-by-side charts
-5. Analyze the relative performance of both stocks
+5. Analyze the relative performance of both assets
 
 ### Export/Download Options
 **Single Chart Mode:**
