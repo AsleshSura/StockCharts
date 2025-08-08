@@ -191,6 +191,19 @@
                         </div>
                     </div>
 
+                    <!-- Export Controls -->
+                    <div id="exportControls" class="export-controls" style="display: none;">
+                        <h4>Export Options</h4>
+                        <div class="export-buttons">
+                            <button id="exportChartBtn" onclick="exportChartAsImage()">
+                                <span>📊</span> Export Chart as PNG
+                            </button>
+                            <button id="exportDataBtn" onclick="exportDataAsCSV()">
+                                <span>📄</span> Export Data as CSV
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="chart-container">
                         <canvas id="stockChart"></canvas>
                     </div>
@@ -232,6 +245,19 @@
                                     <div id="priceChangeB" class="info-value price-change">-</div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Controls for Comparison Mode -->
+                    <div id="exportControlsComparison" class="export-controls" style="display: none;">
+                        <h4>Export Options</h4>
+                        <div class="export-buttons">
+                            <button id="exportComparisonChartsBtn" onclick="exportComparisonCharts()">
+                                <span>📊</span> Export Charts as PNG
+                            </button>
+                            <button id="exportComparisonDataBtn" onclick="exportComparisonDataAsCSV()">
+                                <span>📄</span> Export Data as CSV
+                            </button>
                         </div>
                     </div>
 

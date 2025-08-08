@@ -354,15 +354,31 @@ function createChart(chartResult, companyName) {
     const timestamps = chartResult.timestamp;
     const indicators = chartResult.indicators.quote[0];
     const closes = indicators.close;
+    const opens = indicators.open || [];
+    const highs = indicators.high || [];
+    const lows = indicators.low || [];
+    const volumes = indicators.volume || [];
 
     const labels = [];
     const prices = [];
+    const ohlcData = [];
 
     for (let i = 0; i < timestamps.length; i++) {
         if (closes[i] !== null && closes[i] !== undefined) {
             const date = new Date(timestamps[i] * 1000);
+            const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
             labels.push(date.toLocaleDateString());
             prices.push(closes[i]);
+            
+            // Store OHLC data for CSV export
+            ohlcData.push({
+                date: dateString,
+                open: opens[i] || closes[i],
+                high: highs[i] || closes[i],
+                low: lows[i] || closes[i],
+                close: closes[i],
+                volume: volumes[i] || 0
+            });
         }
     }
 
@@ -467,6 +483,17 @@ function createChart(chartResult, companyName) {
         }
     });
 
+    // Store current chart data and symbol for export
+    currentCompanySymbol = companyName;
+    currentChartData = {
+        prices: ohlcData
+    };
+
+    // Show export controls
+    const exportControls = document.getElementById('exportControls');
+    if (exportControls) {
+        exportControls.style.display = 'block';
+    }
 }
 
 function showLoading() {
@@ -543,6 +570,8 @@ document.addEventListener('DOMContentLoaded', function() {
 let chartA = null;
 let chartB = null;
 let isComparisonMode = false;
+let currentComparisonDataA = null; // Store comparison data A
+let currentComparisonDataB = null; // Store comparison data B
 
 // Initialize comparison mode functionality
 function initializeComparisonMode() {
@@ -618,6 +647,12 @@ function toggleComparisonMode() {
             chart = null;
         }
         clearStockInfo();
+        
+        // Hide single mode export controls
+        const exportControls = document.getElementById('exportControls');
+        if (exportControls) {
+            exportControls.style.display = 'none';
+        }
     } else {
         // Switch to single mode
         singleMode.style.display = 'block';
@@ -635,6 +670,16 @@ function toggleComparisonMode() {
             chartB = null;
         }
         clearComparisonInfo();
+        
+        // Clear comparison data
+        currentComparisonDataA = null;
+        currentComparisonDataB = null;
+        
+        // Hide comparison mode export controls
+        const exportControlsComparison = document.getElementById('exportControlsComparison');
+        if (exportControlsComparison) {
+            exportControlsComparison.style.display = 'none';
+        }
     }
     
     // Update labels and description
@@ -979,8 +1024,18 @@ function createComparisonChart(side, data, symbol) {
     
     if (side === 'A') {
         chartA = newChart;
+        currentComparisonDataA = data;
     } else {
         chartB = newChart;
+        currentComparisonDataB = data;
+    }
+
+    // Show export controls for comparison mode if both charts exist
+    if (chartA && chartB) {
+        const exportControlsComparison = document.getElementById('exportControlsComparison');
+        if (exportControlsComparison) {
+            exportControlsComparison.style.display = 'block';
+        }
     }
 }
 
@@ -1270,4 +1325,185 @@ function clearActiveIndex() {
     document.querySelectorAll('.index-card').forEach(card => {
         card.classList.remove('active');
     });
+}
+
+// Export functionality
+let currentChartData = null; // Global variable to store current chart data
+let currentCompanySymbol = null; // Global variable to store current company symbol
+
+// Function to export chart as PNG image
+function exportChartAsImage() {
+    if (!chart) {
+        showError('No chart available to export. Please load a chart first.');
+        return;
+    }
+
+    try {
+        // Get chart as base64 image
+        const chartImage = chart.toBase64Image('image/png', 1.0);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.download = `${currentCompanySymbol || 'stock'}_chart_${new Date().toISOString().split('T')[0]}.png`;
+        link.href = chartImage;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log('Chart exported successfully as PNG');
+    } catch (error) {
+        console.error('Error exporting chart:', error);
+        showError('Failed to export chart. Please try again.');
+    }
+}
+
+// Function to export current stock data as CSV
+function exportDataAsCSV() {
+    if (!currentChartData || !currentChartData.prices) {
+        showError('No data available to export. Please load stock data first.');
+        return;
+    }
+
+    try {
+        // Prepare CSV content
+        let csvContent = 'Date,Open,High,Low,Close,Volume\n';
+        
+        currentChartData.prices.forEach(item => {
+            csvContent += `${item.date},${item.open || 0},${item.high || 0},${item.low || 0},${item.close || 0},${item.volume || 0}\n`;
+        });
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${currentCompanySymbol || 'stock'}_data_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        console.log('Data exported successfully as CSV');
+    } catch (error) {
+        console.error('Error exporting data:', error);
+        showError('Failed to export data. Please try again.');
+    }
+}
+
+// Function to export comparison charts as PNG
+function exportComparisonCharts() {
+    if (!chartA || !chartB) {
+        showError('Both comparison charts must be loaded to export.');
+        return;
+    }
+
+    try {
+        // Create a canvas to combine both charts
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size (side by side layout)
+        canvas.width = 1600;
+        canvas.height = 600;
+        
+        // Get chart images
+        const chartAImage = new Image();
+        const chartBImage = new Image();
+        
+        chartAImage.onload = function() {
+            chartBImage.onload = function() {
+                // Clear canvas with white background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw both charts side by side
+                ctx.drawImage(chartAImage, 0, 0, 800, 600);
+                ctx.drawImage(chartBImage, 800, 0, 800, 600);
+                
+                // Add divider line
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(800, 0);
+                ctx.lineTo(800, 600);
+                ctx.stroke();
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `comparison_charts_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                console.log('Comparison charts exported successfully');
+            };
+            chartBImage.src = chartB.toBase64Image('image/png', 1.0);
+        };
+        chartAImage.src = chartA.toBase64Image('image/png', 1.0);
+        
+    } catch (error) {
+        console.error('Error exporting comparison charts:', error);
+        showError('Failed to export comparison charts. Please try again.');
+    }
+}
+
+// Function to export comparison data as CSV
+function exportComparisonDataAsCSV() {
+    if (!currentComparisonDataA || !currentComparisonDataB) {
+        showError('Both comparison datasets must be loaded to export.');
+        return;
+    }
+
+    try {
+        // Prepare CSV content with both stocks
+        let csvContent = 'Date,Stock_A_Symbol,Stock_A_Close,Stock_B_Symbol,Stock_B_Close\n';
+        
+        const symbolA = currentComparisonDataA.symbol || 'Stock_A';
+        const symbolB = currentComparisonDataB.symbol || 'Stock_B';
+        
+        // Assuming both datasets have the same dates, use the longer one as reference
+        const maxLength = Math.max(
+            currentComparisonDataA.prices ? currentComparisonDataA.prices.length : 0,
+            currentComparisonDataB.prices ? currentComparisonDataB.prices.length : 0
+        );
+        
+        for (let i = 0; i < maxLength; i++) {
+            const dataA = currentComparisonDataA.prices && currentComparisonDataA.prices[i];
+            const dataB = currentComparisonDataB.prices && currentComparisonDataB.prices[i];
+            
+            const date = (dataA && dataA.date) || (dataB && dataB.date) || '';
+            const priceA = dataA ? dataA.close || 0 : 0;
+            const priceB = dataB ? dataB.close || 0 : 0;
+            
+            csvContent += `${date},${symbolA},${priceA},${symbolB},${priceB}\n`;
+        }
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `comparison_data_${symbolA}_vs_${symbolB}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        console.log('Comparison data exported successfully as CSV');
+    } catch (error) {
+        console.error('Error exporting comparison data:', error);
+        showError('Failed to export comparison data. Please try again.');
+    }
 }

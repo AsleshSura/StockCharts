@@ -168,6 +168,12 @@ function clearStockInfo() {
             }
         }
     });
+    
+    // Hide export controls when clearing stock info
+    const exportControls = document.getElementById('exportControls');
+    if (exportControls) {
+        exportControls.style.display = 'none';
+    }
 }
 
 // Export functions for global use

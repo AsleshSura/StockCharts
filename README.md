@@ -54,6 +54,14 @@ A comprehensive web application for visualizing stock market data with interacti
 - **Smooth animations** and transitions throughout the interface
 - **Error recovery** with helpful suggestions and fallback options
 
+### 📥 Export/Download Features
+- **Chart Image Export**: Download charts as high-quality PNG images
+- **CSV Data Export**: Export stock data in CSV format for analysis
+- **Comparison Chart Export**: Export side-by-side comparison charts
+- **Comparison Data Export**: Export comparison data with both stocks in CSV format
+- **Automatic file naming** with stock symbol and date
+- **OHLC data** included in CSV exports (Open, High, Low, Close, Volume)
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -98,6 +106,25 @@ A comprehensive web application for visualizing stock market data with interacti
 3. Select the time range for comparison
 4. Click "Compare Stocks" to view side-by-side charts
 5. Analyze the relative performance of both stocks
+
+### Export/Download Options
+**Single Chart Mode:**
+1. Load a stock chart by searching for any symbol
+2. Export controls will appear below the stock information
+3. Click "Export Chart as PNG" to download the chart image
+4. Click "Export Data as CSV" to download stock data in spreadsheet format
+
+**Comparison Mode:**
+1. Load both comparison charts with stock symbols
+2. Export controls will appear below the comparison information
+3. Click "Export Charts as PNG" to download a combined image of both charts
+4. Click "Export Data as CSV" to download comparison data for both stocks
+
+**Export Features:**
+- Automatic file naming with stock symbol and current date
+- High-quality PNG images (1600x600 for comparisons, chart resolution for single)
+- CSV files include OHLC data (Open, High, Low, Close, Volume)
+- Downloads start immediately with no additional configuration needed
 
 ### Theme Switching
 - Click the moon/sun icon in the top-right corner
@@ -168,6 +195,13 @@ StockCharts/
 - Company name and symbol
 - Color-coded indicators for gains/losses
 
+### Export Capabilities
+- **Chart Image Export**: High-quality PNG downloads of single charts
+- **CSV Data Export**: Complete OHLC data in spreadsheet format
+- **Comparison Export**: Combined chart images and data for stock comparisons
+- **Automatic Naming**: Files include stock symbol and date for organization
+- **Browser Compatibility**: Works across all modern browsers
+
 ## 🎯 Future Enhancements
 
 - [ ] Technical indicators (Moving averages, RSI, MACD)
@@ -175,7 +209,7 @@ StockCharts/
 - [ ] Cryptocurrency support
 - [ ] Advanced charting tools (candlestick charts)
 - [ ] Stock news integration
-- [ ] Export functionality (PNG, PDF)
+- [x] ~~Export functionality (PNG, CSV)~~ ✅ **Completed**
 - [ ] Watchlist management
 - [ ] Price alerts and notifications
 

@@ -925,3 +925,71 @@ input:checked + .slider:before {
 #compareButton:active {
     transform: translateY(0);
 }
+
+/* Export Controls Styles */
+.export-controls {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px var(--shadow-secondary);
+    transition: all 0.3s ease;
+}
+
+.export-controls h4 {
+    color: var(--text-primary);
+    margin: 0 0 15px 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    text-align: center;
+}
+
+.export-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.export-buttons button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--gradient-button);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    min-width: 160px;
+}
+
+.export-buttons button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.export-buttons button:active {
+    transform: translateY(0);
+}
+
+.export-buttons button span {
+    font-size: 16px;
+}
+
+@media (max-width: 768px) {
+    .export-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .export-buttons button {
+        width: 100%;
+        max-width: 250px;
+    }
+}
