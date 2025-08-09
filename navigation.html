@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Charts - Financial Dashboard Suite</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="navigation.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Financial Dashboard Suite</h1>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                <span class="theme-icon">🌙</span>
+            </button>
+        </div>
+
+        <div class="navigation-hero">
+            <h2>Choose Your Financial Dashboard</h2>
+            <p>Access real-time market data, interactive charts, and comprehensive analysis tools</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-card" onclick="window.location.href='market-indices.html'">
+                <div class="card-icon">📈</div>
+                <h3>Market Indices</h3>
+                <p>Track S&P 500, NASDAQ, and Dow Jones with real-time data and interactive charts</p>
+                <div class="card-features">
+                    <span class="feature-tag">Real-time Data</span>
+                    <span class="feature-tag">Market Status</span>
+                    <span class="feature-tag">Historical Charts</span>
+                </div>
+                <button class="dashboard-btn">Open Dashboard</button>
+            </div>
+
+            <div class="dashboard-card" onclick="window.location.href='cryptocurrency.html'">
+                <div class="card-icon">₿</div>
+                <h3>Cryptocurrency</h3>
+                <p>Monitor Bitcoin, Ethereum, and other major cryptocurrencies with 24/7 trading data</p>
+                <div class="card-features">
+                    <span class="feature-tag">24/7 Trading</span>
+                    <span class="feature-tag">Major Coins</span>
+                    <span class="feature-tag">Live Charts</span>
+                </div>
+                <button class="dashboard-btn">Open Dashboard</button>
+            </div>
+
+            <div class="dashboard-card" onclick="window.location.href='forex.html'">
+                <div class="card-icon">💱</div>
+                <h3>Forex Trading</h3>
+                <p>Analyze currency pairs with real-time exchange rates and historical trends</p>
+                <div class="card-features">
+                    <span class="feature-tag">Currency Pairs</span>
+                    <span class="feature-tag">Live Rates</span>
+                    <span class="feature-tag">Trend Analysis</span>
+                </div>
+                <button class="dashboard-btn">Open Dashboard</button>
+            </div>
+
+            <div class="dashboard-card" onclick="window.location.href='stock-analysis.html'">
+                <div class="card-icon">📊</div>
+                <h3>Stock Analysis</h3>
+                <p>Search and analyze individual stocks with comprehensive data and export options</p>
+                <div class="card-features">
+                    <span class="feature-tag">Any Stock</span>
+                    <span class="feature-tag">Export Data</span>
+                    <span class="feature-tag">Multiple Timeframes</span>
+                </div>
+                <button class="dashboard-btn">Open Dashboard</button>
+            </div>
+
+            <div class="dashboard-card" onclick="window.location.href='stock-comparison.html'">
+                <div class="card-icon">⚖️</div>
+                <h3>Stock Comparison</h3>
+                <p>Compare two stocks side-by-side with synchronized charts and performance metrics</p>
+                <div class="card-features">
+                    <span class="feature-tag">Side-by-Side</span>
+                    <span class="feature-tag">Performance</span>
+                    <span class="feature-tag">Export Charts</span>
+                </div>
+                <button class="dashboard-btn">Open Dashboard</button>
+            </div>
+
+            <div class="dashboard-card legacy" onclick="window.location.href='index.html'">
+                <div class="card-icon">🎯</div>
+                <h3>All-in-One Dashboard</h3>
+                <p>Access all features in the original combined interface</p>
+                <div class="card-features">
+                    <span class="feature-tag">All Features</span>
+                    <span class="feature-tag">Single Page</span>
+                    <span class="feature-tag">Legacy View</span>
+                </div>
+                <button class="dashboard-btn legacy-btn">Open Dashboard</button>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>Getting Started</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>🔑 API Key Setup</h4>
+                    <p>Get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a> for real-time data, or use demo mode with limited functionality.</p>
+                </div>
+                <div class="info-card">
+                    <h4>📱 Responsive Design</h4>
+                    <p>All dashboards are optimized for desktop, tablet, and mobile devices with touch-friendly controls.</p>
+                </div>
+                <div class="info-card">
+                    <h4>💾 Export Options</h4>
+                    <p>Download charts as PNG images and export data as CSV files for further analysis.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2025 Financial Dashboard Suite. Built with Chart.js and Alpha Vantage API.</p>
+        </footer>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.querySelector('.theme-icon');
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeIcon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Comparison Dashboard - Stock Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="navigation.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Stock Comparison Dashboard</h1>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                <span class="theme-icon">🌙</span>
+            </button>
+        </div>
+
+        <div class="back-nav">
+            <a href="navigation.html">← Back to Dashboard Selection</a>
+        </div>
+
+        <div class="info-section">
+            <h3>Side-by-Side Stock Comparison</h3>
+            <p>Compare two stocks, cryptocurrencies, or ETFs side-by-side with synchronized charts and detailed performance metrics. Perfect for investment decision making and relative analysis.</p>
+            <p><small><em>Note: Enter your API key below for real-time data, or leave empty to use demo data. Get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a>.</em></small></p>
+            <div id="dataSourceIndicator" class="data-source-indicator" style="display: none;">
+                <span id="dataSourceText">Using demo data</span>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="form-group">
+                <label for="apiKey">Alpha Vantage API Key (Optional):</label>
+                <input type="text" id="apiKey" placeholder="Enter your API key or leave empty for demo data" maxlength="50">
+                <small class="help-text">Leave empty to use demo data with limited functionality</small>
+            </div>
+            <div class="api-tips" style="margin-top: 15px;">
+                <details>
+                    <summary style="cursor: pointer; font-weight: 500; color: var(--text-api);">💡 API Key Benefits & Tips</summary>
+                    <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
+                        <p><strong>With API Key:</strong></p>
+                        <ul style="margin: 5px 0 15px 20px;">
+                            <li>Real-time stock and cryptocurrency prices</li>
+                            <li>Live market data for any symbol</li>
+                            <li>Historical charts with accurate data</li>
+                            <li>Higher rate limits (5 calls/min free, 500 calls/min premium)</li>
+                        </ul>
+                        <p><strong>Tips:</strong></p>
+                        <ul style="margin: 5px 0 0 20px;">
+                            <li>Free API keys work great for personal use</li>
+                            <li>Your key is stored locally and never shared</li>
+                            <li>If quota exceeded, app falls back to demo data</li>
+                        </ul>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <div id="comparisonModeContainer" class="mode-container comparison-mode">
+                <div class="comparison-inputs">
+                    <div class="stock-input-group">
+                        <h4>Stock A</h4>
+                        <div class="input-group">
+                            <div class="form-group">
+                                <label for="symbolA">Symbol:</label>
+                                <input type="text" id="symbolA" placeholder="AAPL, BTC-USD" maxlength="10">
+                                <small class="symbol-help">Examples: AAPL, TSLA, BTC-USD</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="vs-divider">VS</div>
+                    <div class="stock-input-group">
+                        <h4>Stock B</h4>
+                        <div class="input-group">
+                            <div class="form-group">
+                                <label for="symbolB">Symbol:</label>
+                                <input type="text" id="symbolB" placeholder="GOOGL, ETH-USD" maxlength="10">
+                                <small class="symbol-help">Examples: GOOGL, MSFT, ETH-USD</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="comparison-controls">
+                    <div class="form-group">
+                        <label for="comparisonTimeRange">Time Range:</label>
+                        <select id="comparisonTimeRange">
+                            <option value="7" selected>Last 7 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="365">Last year</option>
+                        </select>
+                    </div>
+                    <button id="compareButton" onclick="compareStocks()">Compare Stocks</button>
+                </div>
+                
+                <div class="comparison-tips">
+                    <h4>Popular Comparisons:</h4>
+                    <div class="tips-grid">
+                        <div class="tip-item" onclick="loadComparison('AAPL', 'GOOGL')">
+                            <strong>AAPL vs GOOGL</strong>
+                            <span>Apple vs Google</span>
+                        </div>
+                        <div class="tip-item" onclick="loadComparison('TSLA', 'F')">
+                            <strong>TSLA vs F</strong>
+                            <span>Tesla vs Ford</span>
+                        </div>
+                        <div class="tip-item" onclick="loadComparison('BTC-USD', 'ETH-USD')">
+                            <strong>BTC vs ETH</strong>
+                            <span>Bitcoin vs Ethereum</span>
+                        </div>
+                        <div class="tip-item" onclick="loadComparison('SPY', 'QQQ')">
+                            <strong>SPY vs QQQ</strong>
+                            <span>S&P 500 vs NASDAQ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="error" class="error"></div>
+
+        <div class="chart-section">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading comparison data...</p>
+            </div>
+
+            <!-- Comparison Mode -->
+            <div id="comparisonChartContainer" class="comparison-chart-container">
+                <div class="comparison-info">
+                    <div class="stock-info-side">
+                        <h4 id="stockATitle">Stock A</h4>
+                        <div id="stockInfoA" class="stock-info">
+                            <div class="info-card">
+                                <div class="info-label">Company</div>
+                                <div id="companyNameA" class="info-value">-</div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-label">Current Price</div>
+                                <div id="currentPriceA" class="info-value">-</div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-label">Change</div>
+                                <div id="priceChangeA" class="info-value price-change">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stock-info-side">
+                        <h4 id="stockBTitle">Stock B</h4>
+                        <div id="stockInfoB" class="stock-info">
+                            <div class="info-card">
+                                <div class="info-label">Company</div>
+                                <div id="companyNameB" class="info-value">-</div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-label">Current Price</div>
+                                <div id="currentPriceB" class="info-value">-</div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-label">Change</div>
+                                <div id="priceChangeB" class="info-value price-change">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Controls for Comparison Mode -->
+                <div id="exportControlsComparison" class="export-controls" style="display: none;">
+                    <h4>Export Options</h4>
+                    <div class="export-buttons">
+                        <button id="exportComparisonChartsBtn" onclick="exportComparisonCharts()">
+                            <span>📊</span> Export Charts as PNG
+                        </button>
+                        <button id="exportComparisonDataBtn" onclick="exportComparisonDataAsCSV()">
+                            <span>📄</span> Export Data as CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="comparison-charts">
+                    <div class="chart-side">
+                        <div class="chart-container">
+                            <canvas id="stockChartA"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-side">
+                        <div class="chart-container">
+                            <canvas id="stockChartB"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load API key and initialize
+            loadApiKey();
+            updateApiKeyStatus();
+            updateDataSourceIndicator();
+            
+            // Add enter key support for both inputs
+            document.getElementById('symbolA').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    compareStocks();
+                }
+            });
+            
+            document.getElementById('symbolB').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    compareStocks();
+                }
+            });
+            
+            // Load a default comparison to show functionality
+            setTimeout(() => {
+                loadComparison('AAPL', 'GOOGL');
+            }, 1000);
+        });
+
+        // Function to load a predefined comparison
+        function loadComparison(symbolA, symbolB) {
+            document.getElementById('symbolA').value = symbolA;
+            document.getElementById('symbolB').value = symbolB;
+            compareStocks();
+        }
+
+        // Override the single stock search function
+        function searchStock() {
+            console.log('Single stock search not available in Comparison dashboard');
+        }
+
+        // Hide elements that are not relevant for this page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide single mode elements if they exist
+            const singleElements = document.querySelectorAll('#singleMode, #singleChartContainer');
+            singleElements.forEach(el => {
+                if (el.style) el.style.display = 'none';
+            });
+            
+            // Show comparison elements
+            const comparisonContainer = document.getElementById('comparisonChartContainer');
+            if (comparisonContainer) {
+                comparisonContainer.style.display = 'block';
+            }
+        });
+    </script>
+
+    <style>
+        .symbol-help {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        .comparison-tips {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--border-primary);
+        }
+
+        .comparison-tips h4 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .tip-item {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .tip-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-secondary);
+            border-color: var(--focus-color);
+        }
+
+        .tip-item strong {
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .tip-item span {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .tips-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tips-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

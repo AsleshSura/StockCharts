@@ -8,6 +8,32 @@ function getApiKey() {
     return userApiKey || DEFAULT_API_KEY;
 }
 
+// Save API key to localStorage
+function saveApiKey() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    try {
+        if (apiKey && apiKey !== 'demo') {
+            localStorage.setItem('stockchart-api-key', apiKey);
+        } else {
+            localStorage.removeItem('stockchart-api-key');
+        }
+    } catch (e) {
+        console.warn('Could not save API key to localStorage');
+    }
+}
+
+// Load API key from localStorage
+function loadApiKey() {
+    try {
+        const savedApiKey = localStorage.getItem('stockchart-api-key');
+        if (savedApiKey) {
+            document.getElementById('apiKey').value = savedApiKey;
+        }
+    } catch (e) {
+        console.warn('Could not load API key from localStorage');
+    }
+}
+
 // Backup Yahoo Finance endpoints
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 const YF_BASE_URL = 'https://query1.finance.yahoo.com';
@@ -23,6 +49,12 @@ document.getElementById('companySymbol').addEventListener('keypress', function(e
 // Add event listener for API key input to provide feedback
 document.getElementById('apiKey').addEventListener('input', function(e) {
     updateApiKeyStatus();
+    saveApiKey(); // Auto-save API key
+});
+
+// Add event listener for API key blur to save
+document.getElementById('apiKey').addEventListener('blur', function(e) {
+    saveApiKey();
 });
 
 function updateApiKeyStatus() {
@@ -30,17 +62,44 @@ function updateApiKeyStatus() {
     const helpText = document.querySelector('.help-text');
     
     if (apiKey && apiKey !== 'demo') {
-        helpText.textContent = 'Using your API key for real-time data';
+        helpText.innerHTML = '✅ Using your API key for:<br>• Real-time stock & crypto data<br>• Market indices<br>• Forex rates & historical charts<br>• Higher rate limits';
         helpText.style.color = '#38a169';
     } else {
-        helpText.textContent = 'Leave empty to use demo data with limited functionality';
-        helpText.style.color = '#718096';
+        helpText.innerHTML = '⚠️ Demo mode (limited functionality):<br>• Mock data for stocks & crypto<br>• Basic forex rates only<br>• No historical forex charts<br>• <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="color: #3182ce;">Get free API key</a>';
+        helpText.style.color = '#d69e2e';
+    }
+    
+    // Update data source indicator
+    updateDataSourceIndicator();
+}
+
+function updateDataSourceIndicator(status = null) {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const indicator = document.getElementById('dataSourceIndicator');
+    const indicatorText = document.getElementById('dataSourceText');
+    
+    if (!indicator || !indicatorText) return;
+    
+    if (status === 'quota-exceeded') {
+        indicator.className = 'data-source-indicator quota-exceeded';
+        indicatorText.textContent = 'API quota exceeded - Using fallback data';
+        indicator.style.display = 'flex';
+    } else if (apiKey && apiKey !== 'demo') {
+        indicator.className = 'data-source-indicator api-connected';
+        indicatorText.textContent = 'Connected to Alpha Vantage API - Real-time data';
+        indicator.style.display = 'flex';
+    } else {
+        indicator.className = 'data-source-indicator';
+        indicatorText.textContent = 'Demo mode - Add API key for real-time data';
+        indicator.style.display = 'flex';
     }
 }
 
 // Initialize API key status on page load
 document.addEventListener('DOMContentLoaded', function() {
+    loadApiKey(); // Load saved API key first
     updateApiKeyStatus();
+    updateDataSourceIndicator();
 });
 
 async function searchStock() {
@@ -1311,7 +1370,9 @@ async function fetchIndexDataAlphaVantage(symbol) {
     }
     
     if (data['Note']) {
-        throw new Error('API call frequency limit reached');
+        // Show API quota warning
+        updateDataSourceIndicator('quota-exceeded');
+        throw new Error('API call frequency limit reached. Please wait or upgrade your API key.');
     }
     
     const quote = data['Global Quote'];
@@ -1485,7 +1546,53 @@ async function updateCryptoData(symbol, info) {
     }
     
     try {
-        // Try Yahoo Finance for crypto data
+        const apiKey = getApiKey();
+        
+        // If user has provided API key, try Alpha Vantage first
+        if (apiKey && apiKey !== 'demo') {
+            try {
+                console.log(`Trying Alpha Vantage for ${symbol} with user key...`);
+                const cryptoSymbol = symbol.split('-')[0]; // Extract BTC from BTC-USD
+                const alphaVantageUrl = `${ALPHA_VANTAGE_BASE_URL}?function=DIGITAL_CURRENCY_DAILY&symbol=${cryptoSymbol}&market=USD&apikey=${apiKey}`;
+                const response = await fetch(alphaVantageUrl);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data['Time Series (Digital Currency Daily)']) {
+                        const timeSeries = data['Time Series (Digital Currency Daily)'];
+                        const dates = Object.keys(timeSeries);
+                        if (dates.length > 0) {
+                            const latestDate = dates[0];
+                            const latestData = timeSeries[latestDate];
+                            const price = parseFloat(latestData['4a. close (USD)']);
+                            
+                            // Calculate change (comparing with previous day if available)
+                            let change = 0;
+                            if (dates.length > 1) {
+                                const previousData = timeSeries[dates[1]];
+                                const previousPrice = parseFloat(previousData['4a. close (USD)']);
+                                change = price - previousPrice;
+                            }
+                            
+                            const changePercent = change !== 0 ? (change / (price - change)) * 100 : 0;
+                            
+                            const cryptoData = {
+                                price: price,
+                                change: change,
+                                changePercent: changePercent
+                            };
+                            
+                            updateCryptoDisplay(symbol, cryptoData, info);
+                            return;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn(`Alpha Vantage failed for ${symbol}:`, error);
+            }
+        }
+        
+        // Fallback to Yahoo Finance for crypto data
         const data = await fetchCryptoDataYahoo(symbol);
         updateCryptoDisplay(symbol, data, info);
     } catch (error) {
@@ -1495,7 +1602,7 @@ async function updateCryptoData(symbol, info) {
         
         // Show subtle indicator that this is demo data
         if (priceElement) {
-            priceElement.title = 'Demo data - live crypto prices vary significantly';
+            priceElement.title = 'Demo data - add API key for real-time prices';
         }
     }
 }
@@ -1968,10 +2075,29 @@ async function fetchForexRate(pair) {
     try {
         console.log(`Fetching forex rate for ${pair.symbol}...`);
         
-        // Try multiple APIs for better reliability
+        const apiKey = getApiKey();
         let data = null;
         
-        // Primary API: Exchange Rate API
+        // If user has provided API key, try Alpha Vantage FX first
+        if (apiKey && apiKey !== 'demo') {
+            try {
+                console.log('Trying Alpha Vantage FX API with user key...');
+                const alphaVantageUrl = `${ALPHA_VANTAGE_BASE_URL}?function=CURRENCY_EXCHANGE_RATE&from_currency=${pair.baseCurrency}&to_currency=${pair.quoteCurrency}&apikey=${apiKey}`;
+                const response = await fetch(alphaVantageUrl);
+                if (response.ok) {
+                    data = await response.json();
+                    if (data['Realtime Currency Exchange Rate']) {
+                        const rate = parseFloat(data['Realtime Currency Exchange Rate']['5. Exchange Rate']);
+                        updateForexPairData(pair, rate, 'alpha-vantage');
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.warn('Alpha Vantage FX API failed:', error);
+            }
+        }
+        
+        // Primary fallback API: Exchange Rate API
         try {
             const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${pair.baseCurrency}`);
             if (response.ok) {
@@ -1985,7 +2111,7 @@ async function fetchForexRate(pair) {
             console.warn('Exchange Rate API failed:', error);
         }
         
-        // Fallback API: Fixer.io (requires API key in production)
+        // Secondary fallback API: Fixer.io (requires API key in production)
         try {
             const response = await fetch(`https://api.fixer.io/latest?base=${pair.baseCurrency}&symbols=${pair.quoteCurrency}`);
             if (response.ok) {
@@ -2175,12 +2301,136 @@ function refreshForexRates() {
     document.getElementById('lastUpdatedForex').textContent = new Date().toLocaleString();
 }
 
-// Load forex chart (placeholder for future chart integration)
-function loadForexChart(pairSymbol) {
+// Load forex chart with historical data
+async function loadForexChart(pairSymbol) {
     console.log(`Loading chart for ${pairSymbol}...`);
-    // This would integrate with the existing chart system
-    // For now, just show an info message
-    showError(`Chart view for ${pairSymbol} coming soon! Click the refresh button to update rates.`);
+    
+    const pair = forexPairs.find(p => p.symbol === pairSymbol);
+    if (!pair) {
+        showError(`Currency pair ${pairSymbol} not found`);
+        return;
+    }
+    
+    const apiKey = getApiKey();
+    
+    // If user has API key, try to get historical data from Alpha Vantage
+    if (apiKey && apiKey !== 'demo') {
+        try {
+            showLoading();
+            
+            // Use Alpha Vantage FX_DAILY function for historical forex data
+            const url = `${ALPHA_VANTAGE_BASE_URL}?function=FX_DAILY&from_symbol=${pair.baseCurrency}&to_symbol=${pair.quoteCurrency}&apikey=${apiKey}`;
+            const response = await fetch(url);
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data['Time Series FX (Daily)']) {
+                    // Set forex pair as the current symbol and generate chart
+                    document.getElementById('companySymbol').value = pairSymbol;
+                    
+                    // Process forex data for chart
+                    const timeSeries = data['Time Series FX (Daily)'];
+                    const dates = Object.keys(timeSeries).slice(0, 30).reverse(); // Last 30 days
+                    const prices = dates.map(date => parseFloat(timeSeries[date]['4. close']));
+                    
+                    // Create forex chart
+                    createForexChart(pairSymbol, dates, prices, pair);
+                    hideLoading();
+                    return;
+                }
+            }
+        } catch (error) {
+            console.warn('Alpha Vantage FX historical data failed:', error);
+        }
+    }
+    
+    // Fallback: Show info message and current rate
+    hideLoading();
+    const currentRate = pair.rate ? pair.rate.toFixed(4) : 'N/A';
+    showError(`Forex chart for ${pairSymbol}: Current rate is ${currentRate}. Add your Alpha Vantage API key for historical charts!`);
+}
+
+// Create forex chart
+function createForexChart(pairSymbol, dates, prices, pairInfo) {
+    const ctx = document.getElementById('stockChart').getContext('2d');
+    
+    // Destroy existing chart
+    if (chart) {
+        chart.destroy();
+    }
+    
+    // Update stock info section with forex data
+    document.getElementById('companyName').textContent = `${pairInfo.baseCurrency}/${pairInfo.quoteCurrency}`;
+    document.getElementById('currentPrice').textContent = pairInfo.rate ? pairInfo.rate.toFixed(4) : 'N/A';
+    
+    // Format change display
+    const changeElement = document.getElementById('priceChange');
+    if (pairInfo.change !== undefined) {
+        const sign = pairInfo.change >= 0 ? '+' : '';
+        changeElement.textContent = `${sign}${pairInfo.change.toFixed(4)} (${sign}${pairInfo.changePercent.toFixed(2)}%)`;
+        changeElement.className = `info-value price-change ${pairInfo.change >= 0 ? 'positive' : 'negative'}`;
+    }
+    
+    document.getElementById('dayHigh').textContent = pairInfo.high24h ? pairInfo.high24h.toFixed(4) : '-';
+    document.getElementById('dayLow').textContent = pairInfo.low24h ? pairInfo.low24h.toFixed(4) : '-';
+    
+    // Show export controls
+    document.getElementById('exportControls').style.display = 'block';
+    
+    const isDark = themeManager && themeManager.isDarkMode();
+    
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates.map(date => new Date(date).toLocaleDateString()),
+            datasets: [{
+                label: `${pairSymbol} Exchange Rate`,
+                data: prices,
+                borderColor: '#3182ce',
+                backgroundColor: 'rgba(49, 130, 206, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `${pairSymbol} Exchange Rate - 30 Day History`,
+                    color: isDark ? '#f7fafc' : '#2d3748'
+                },
+                legend: {
+                    labels: {
+                        color: isDark ? '#f7fafc' : '#2d3748'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: isDark ? '#f7fafc' : '#2d3748'
+                    },
+                    grid: {
+                        color: isDark ? '#4a5568' : '#e2e8f0'
+                    }
+                },
+                y: {
+                    ticks: {
+                        color: isDark ? '#f7fafc' : '#2d3748',
+                        callback: function(value) {
+                            return value.toFixed(4);
+                        }
+                    },
+                    grid: {
+                        color: isDark ? '#4a5568' : '#e2e8f0'
+                    }
+                }
+            }
+        }
+    });
 }
 
 // Auto-refresh forex rates every 60 seconds

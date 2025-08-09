@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forex Trading Dashboard - Stock Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="navigation.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Forex Trading Dashboard</h1>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                <span class="theme-icon">🌙</span>
+            </button>
+        </div>
+
+        <div class="back-nav">
+            <a href="navigation.html">← Back to Dashboard Selection</a>
+        </div>
+
+        <div class="info-section">
+            <h3>Currency Exchange Rate Analysis</h3>
+            <p>Track real-time forex exchange rates and analyze currency pair trends with comprehensive charts and data. Perfect for forex trading and international business.</p>
+            <p><small><em>Note: Enter your API key below for real-time data and historical charts, or leave empty for basic rates. Get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a>.</em></small></p>
+            <div id="dataSourceIndicator" class="data-source-indicator" style="display: none;">
+                <span id="dataSourceText">Using demo data</span>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="form-group">
+                <label for="apiKey">Alpha Vantage API Key (Optional):</label>
+                <input type="text" id="apiKey" placeholder="Enter your API key or leave empty for basic data" maxlength="50">
+                <small class="help-text">Leave empty to use basic forex rates (limited functionality)</small>
+            </div>
+            <div class="api-tips" style="margin-top: 15px;">
+                <details>
+                    <summary style="cursor: pointer; font-weight: 500; color: var(--text-api);">💡 API Key Benefits & Tips</summary>
+                    <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
+                        <p><strong>With API Key:</strong></p>
+                        <ul style="margin: 5px 0 15px 20px;">
+                            <li>Real-time forex exchange rates</li>
+                            <li>Historical forex charts with 30-day data</li>
+                            <li>Accurate currency pair analysis</li>
+                            <li>Higher rate limits (5 calls/min free, 500 calls/min premium)</li>
+                        </ul>
+                        <p><strong>Tips:</strong></p>
+                        <ul style="margin: 5px 0 0 20px;">
+                            <li>Free API keys work great for personal use</li>
+                            <li>Your key is stored locally and never shared</li>
+                            <li>If quota exceeded, app falls back to basic rates</li>
+                        </ul>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <!-- Forex Trading Section -->
+        <div class="forex-section">
+            <div class="forex-header">
+                <h3>Forex Trading - Currency Pairs</h3>
+                <div class="forex-status">
+                    <span class="status-indicator" id="forexStatus">24/7 Trading</span>
+                </div>
+            </div>
+            <div class="forex-container">
+                <div class="forex-input">
+                    <div class="currency-selector">
+                        <label for="baseCurrency">Base Currency:</label>
+                        <select id="baseCurrency">
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="JPY">JPY - Japanese Yen</option>
+                            <option value="AUD">AUD - Australian Dollar</option>
+                            <option value="CAD">CAD - Canadian Dollar</option>
+                            <option value="CHF">CHF - Swiss Franc</option>
+                            <option value="CNY">CNY - Chinese Yuan</option>
+                        </select>
+                    </div>
+                    <div class="currency-controls">
+                        <div class="currency-separator">/</div>
+                        <button id="swapCurrencies" onclick="swapCurrencies()" title="Swap base and quote currencies">
+                            <span class="swap-icon">⇄</span>
+                        </button>
+                    </div>
+                    <div class="currency-selector">
+                        <label for="quoteCurrency">Quote Currency:</label>
+                        <select id="quoteCurrency">
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="JPY">JPY - Japanese Yen</option>
+                            <option value="AUD">AUD - Australian Dollar</option>
+                            <option value="CAD">CAD - Canadian Dollar</option>
+                            <option value="CHF">CHF - Swiss Franc</option>
+                            <option value="CNY">CNY - Chinese Yuan</option>
+                        </select>
+                    </div>
+                    <button id="addForexPair" onclick="addCurrencyPair()">Track Pair</button>
+                </div>
+                <div id="forexPairs" class="forex-pairs">
+                    <p class="empty-state">No currency pairs tracked yet. Add one above!</p>
+                </div>
+            </div>
+            <div class="forex-refresh">
+                <button id="refreshForex" onclick="refreshForexRates()">
+                    <span class="refresh-icon">↻</span>
+                    Refresh Rates
+                </button>
+                <span class="last-updated-forex">Last updated: <span id="lastUpdatedForex">-</span></span>
+            </div>
+            <div class="forex-note">
+                <p><small><em>💱 <strong>Forex Tip:</strong> Currency pairs show how much of the quote currency equals one unit of the base currency (e.g., EUR/USD = 1.0850 means 1 Euro = 1.0850 US Dollars)</em></small></p>
+            </div>
+        </div>
+
+        <div id="error" class="error"></div>
+
+        <div class="chart-section">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading forex data...</p>
+            </div>
+
+            <div id="singleChartContainer" class="single-chart-container">
+                <div id="stockInfo" class="stock-info">
+                    <div class="info-card">
+                        <div class="info-label">Currency Pair</div>
+                        <div id="companyName" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Exchange Rate</div>
+                        <div id="currentPrice" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Change</div>
+                        <div id="priceChange" class="info-value price-change">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">High</div>
+                        <div id="dayHigh" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Low</div>
+                        <div id="dayLow" class="info-value">-</div>
+                    </div>
+                </div>
+
+                <!-- Export Controls -->
+                <div id="exportControls" class="export-controls" style="display: none;">
+                    <h4>Export Options</h4>
+                    <div class="export-buttons">
+                        <button id="exportChartBtn" onclick="exportChartAsImage()">
+                            <span>📊</span> Export Chart as PNG
+                        </button>
+                        <button id="exportDataBtn" onclick="exportDataAsCSV()">
+                            <span>📄</span> Export Data as CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Initialize page with forex data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load API key and initialize
+            loadApiKey();
+            updateApiKeyStatus();
+            updateDataSourceIndicator();
+            
+            // Initialize forex pairs with some common pairs
+            initializeCommonForexPairs();
+            
+            // Set up refresh interval (every 5 minutes)
+            setInterval(refreshForexRates, 5 * 60 * 1000);
+        });
+
+        // Function to initialize common forex pairs
+        function initializeCommonForexPairs() {
+            // Add some popular forex pairs by default
+            const commonPairs = [
+                { base: 'EUR', quote: 'USD' },
+                { base: 'GBP', quote: 'USD' },
+                { base: 'USD', quote: 'JPY' }
+            ];
+            
+            setTimeout(() => {
+                commonPairs.forEach((pair, index) => {
+                    setTimeout(() => {
+                        document.getElementById('baseCurrency').value = pair.base;
+                        document.getElementById('quoteCurrency').value = pair.quote;
+                        addCurrencyPair();
+                    }, index * 1000); // Stagger the additions to avoid API rate limits
+                });
+            }, 1000);
+        }
+
+        // Override the original searchStock function to prevent errors
+        function searchStock() {
+            console.log('Search function not available in Forex dashboard');
+        }
+
+        // Override comparison mode functions
+        function compareStocks() {
+            console.log('Comparison mode not available in Forex dashboard');
+        }
+
+        // Hide elements that are not relevant for this page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide comparison mode elements if they exist
+            const comparisonElements = document.querySelectorAll('[id*="comparison"], [id*="compare"]');
+            comparisonElements.forEach(el => {
+                if (el.style) el.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

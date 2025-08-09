@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Indices Dashboard - Stock Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="navigation.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Market Indices Dashboard</h1>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                <span class="theme-icon">🌙</span>
+            </button>
+        </div>
+
+        <div class="back-nav">
+            <a href="navigation.html">← Back to Dashboard Selection</a>
+        </div>
+
+        <div class="info-section">
+            <h3>Real-Time Market Indices</h3>
+            <p>Track the performance of major US stock market indices including S&P 500, NASDAQ, and Dow Jones with real-time data and interactive charts.</p>
+            <p><small><em>Note: Enter your API key below for real-time data, or leave empty to use demo data. Get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a>.</em></small></p>
+            <div id="dataSourceIndicator" class="data-source-indicator" style="display: none;">
+                <span id="dataSourceText">Using demo data</span>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="form-group">
+                <label for="apiKey">Alpha Vantage API Key (Optional):</label>
+                <input type="text" id="apiKey" placeholder="Enter your API key or leave empty for demo data" maxlength="50">
+                <small class="help-text">Leave empty to use demo data with limited functionality</small>
+            </div>
+            <div class="api-tips" style="margin-top: 15px;">
+                <details>
+                    <summary style="cursor: pointer; font-weight: 500; color: var(--text-api);">💡 API Key Benefits & Tips</summary>
+                    <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
+                        <p><strong>With API Key:</strong></p>
+                        <ul style="margin: 5px 0 15px 20px;">
+                            <li>Real-time market indices data</li>
+                            <li>Live market status updates</li>
+                            <li>Historical charts with accurate data</li>
+                            <li>Higher rate limits (5 calls/min free, 500 calls/min premium)</li>
+                        </ul>
+                        <p><strong>Tips:</strong></p>
+                        <ul style="margin: 5px 0 0 20px;">
+                            <li>Free API keys work great for personal use</li>
+                            <li>Your key is stored locally and never shared</li>
+                            <li>If quota exceeded, app falls back to demo data</li>
+                        </ul>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <!-- Market Indices Section -->
+        <div class="market-indices-section">
+            <div class="indices-header">
+                <h3>Market Indices</h3>
+                <div class="market-status">
+                    <span class="status-indicator" id="marketStatus">Market Status</span>
+                </div>
+            </div>
+            <div class="indices-container">
+                <div class="index-card" data-index="SPY" onclick="loadIndexChart('SPY', 'S&P 500')">
+                    <div class="index-header">
+                        <h4>S&P 500</h4>
+                        <span class="index-symbol">SPY</span>
+                    </div>
+                    <div class="index-value">
+                        <span class="index-price" id="spyPrice">Loading...</span>
+                        <span class="index-change" id="spyChange">-</span>
+                    </div>
+                    <button class="index-chart-btn" onclick="event.stopPropagation(); loadIndexChart('SPY', 'S&P 500')">View Chart</button>
+                </div>
+                
+                <div class="index-card" data-index="QQQ" onclick="loadIndexChart('QQQ', 'NASDAQ')">
+                    <div class="index-header">
+                        <h4>NASDAQ</h4>
+                        <span class="index-symbol">QQQ</span>
+                    </div>
+                    <div class="index-value">
+                        <span class="index-price" id="qqqPrice">Loading...</span>
+                        <span class="index-change" id="qqqChange">-</span>
+                    </div>
+                    <button class="index-chart-btn" onclick="event.stopPropagation(); loadIndexChart('QQQ', 'NASDAQ')">View Chart</button>
+                </div>
+                
+                <div class="index-card" data-index="DIA" onclick="loadIndexChart('DIA', 'Dow Jones')">
+                    <div class="index-header">
+                        <h4>Dow Jones</h4>
+                        <span class="index-symbol">DIA</span>
+                    </div>
+                    <div class="index-value">
+                        <span class="index-price" id="diaPrice">Loading...</span>
+                        <span class="index-change" id="diaChange">-</span>
+                    </div>
+                    <button class="index-chart-btn" onclick="event.stopPropagation(); loadIndexChart('DIA', 'Dow Jones')">View Chart</button>
+                </div>
+            </div>
+            <div class="indices-refresh">
+                <button id="refreshIndices" onclick="refreshMarketIndices()">
+                    <span class="refresh-icon">↻</span>
+                    Refresh Indices
+                </button>
+                <span class="last-updated">Last updated: <span id="lastUpdated">-</span></span>
+            </div>
+        </div>
+
+        <div id="error" class="error"></div>
+
+        <div class="chart-section">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading market data...</p>
+            </div>
+
+            <div id="singleChartContainer" class="single-chart-container">
+                <div id="stockInfo" class="stock-info">
+                    <div class="info-card">
+                        <div class="info-label">Index</div>
+                        <div id="companyName" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Current Price</div>
+                        <div id="currentPrice" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Change</div>
+                        <div id="priceChange" class="info-value price-change">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">High</div>
+                        <div id="dayHigh" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Low</div>
+                        <div id="dayLow" class="info-value">-</div>
+                    </div>
+                </div>
+
+                <!-- Export Controls -->
+                <div id="exportControls" class="export-controls" style="display: none;">
+                    <h4>Export Options</h4>
+                    <div class="export-buttons">
+                        <button id="exportChartBtn" onclick="exportChartAsImage()">
+                            <span>📊</span> Export Chart as PNG
+                        </button>
+                        <button id="exportDataBtn" onclick="exportDataAsCSV()">
+                            <span>📄</span> Export Data as CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Initialize page with market indices data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load API key and initialize
+            loadApiKey();
+            updateApiKeyStatus();
+            updateDataSourceIndicator();
+            
+            // Load market indices data
+            refreshMarketIndices();
+            
+            // Set up refresh interval (every 5 minutes)
+            setInterval(refreshMarketIndices, 5 * 60 * 1000);
+        });
+
+        // Override the original searchStock function to prevent errors
+        function searchStock() {
+            console.log('Search function not available in Market Indices dashboard');
+        }
+
+        // Override comparison mode functions
+        function compareStocks() {
+            console.log('Comparison mode not available in Market Indices dashboard');
+        }
+
+        // Hide elements that are not relevant for this page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide comparison mode elements if they exist
+            const comparisonElements = document.querySelectorAll('[id*="comparison"], [id*="compare"]');
+            comparisonElements.forEach(el => {
+                if (el.style) el.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

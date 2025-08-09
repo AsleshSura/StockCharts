@@ -6,6 +6,19 @@ A comprehensive web application for visualizing stock market data and cryptocurr
 
 ![Stock Chart Visualizer](https://img.shields.io/badge/Status-Live-brightgreen) ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow) ![Chart.js](https://img.shields.io/badge/Chart.js-4.0+-orange) ![CSS3](https://img.shields.io/badge/CSS3-Modern-blue) ![Crypto](https://img.shields.io/badge/Crypto-Supported-orange)
 
+## 🏠 Dashboard Navigation
+
+The application now features **separate specialized dashboards** for different financial analysis needs:
+
+- **📈 Market Indices Dashboard** (`market-indices.html`) - Real-time tracking of S&P 500, NASDAQ, and Dow Jones
+- **₿ Cryptocurrency Dashboard** (`cryptocurrency.html`) - 24/7 crypto monitoring with major coins
+- **💱 Forex Trading Dashboard** (`forex.html`) - Currency pair analysis and exchange rates
+- **📊 Stock Analysis Dashboard** (`stock-analysis.html`) - Individual stock research and analysis
+- **⚖️ Stock Comparison Dashboard** (`stock-comparison.html`) - Side-by-side stock comparisons
+- **🎯 All-in-One Dashboard** (`index.html`) - Original combined interface
+
+**New Navigation Hub** (`navigation.html`) - Choose your specialized financial dashboard
+
 ## ✨ Features
 
 ### 📊 Stock Chart Visualization
@@ -31,6 +44,13 @@ A comprehensive web application for visualizing stock market data and cryptocurr
 - **Market status indicator** (Open/Closed) based on Eastern Time
 - **One-click chart viewing** for any market index
 - **Price change indicators** with color-coded positive/negative changes
+
+### 💱 Forex Trading Features
+- **Real-time currency exchange rates** for major forex pairs
+- **Interactive currency pair builder** with 8 major currencies
+- **Currency swap functionality** for quick rate inversions
+- **Historical forex charts** with API key integration
+- **Live forex rate tracking** with automatic refresh
 
 ### 🔄 Stock Comparison Mode
 - **Side-by-side stock comparison** with dual chart display

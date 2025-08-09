@@ -104,6 +104,28 @@ body {
     margin-bottom: 30px;
 }
 
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.nav-link {
+    background: var(--gradient-button);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.nav-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--gradient-button-hover);
+}
+
 h1 {
     color: var(--text-primary);
     font-size: 2.5rem;
@@ -218,6 +240,52 @@ button:disabled {
 
 .info-section p {
     color: var(--text-muted);
+    font-size: 14px;
+}
+
+.data-source-indicator {
+    background: var(--bg-warning);
+    color: var(--text-warning);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 10px;
+    border: 1px solid rgba(197, 48, 48, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.data-source-indicator.api-connected {
+    background: var(--bg-info);
+    color: var(--text-info);
+    border: 1px solid rgba(56, 161, 105, 0.2);
+}
+
+.data-source-indicator.quota-exceeded {
+    background: #fef5e7;
+    color: #d69e2e;
+    border: 1px solid rgba(214, 158, 46, 0.2);
+}
+
+[data-theme="dark"] .data-source-indicator.quota-exceeded {
+    background: #2d1f0b;
+    color: #f6e05e;
+}
+
+.data-source-indicator::before {
+    content: "⚠️";
+    font-size: 14px;
+}
+
+.data-source-indicator.api-connected::before {
+    content: "✅";
+    font-size: 14px;
+}
+
+.data-source-indicator.quota-exceeded::before {
+    content: "⏳";
     font-size: 14px;
 }
 

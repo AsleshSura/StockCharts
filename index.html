@@ -10,17 +10,21 @@
     </head>
     <body>
         <div class="container">
-            <div class="header">
-                <h1>Stock, Crypto & Forex Chart Visualizer</h1>
+        <div class="header">
+            <h1>Stock, Crypto & Forex Chart Visualizer</h1>
+            <div class="header-controls">
+                <a href="navigation.html" class="nav-link">🏠 New Dashboard View</a>
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
                     <span class="theme-icon">🌙</span>
                 </button>
             </div>
-
-            <div class="info-section">
+        </div>            <div class="info-section">
                 <h3>Stock, Crypto & Forex Chart Visualizer</h3>
                 <p>Get stock data and interactive charts for any publicly traded company, plus major cryptocurrencies like Bitcoin and Ethereum, and real-time forex currency pair tracking.</p>
                 <p><small><em>Note: Enter your API key below for real-time data, or leave empty to use demo data. Get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a>.</em></small></p>
+                <div id="dataSourceIndicator" class="data-source-indicator" style="display: none;">
+                    <span id="dataSourceText">Using demo data</span>
+                </div>
             </div>
 
             <!-- Market Indices Section -->
@@ -235,6 +239,26 @@
                     <label for="apiKey">Alpha Vantage API Key (Optional):</label>
                     <input type="text" id="apiKey" placeholder="Enter your API key or leave empty for demo data" maxlength="50">
                     <small class="help-text">Leave empty to use demo data with limited functionality</small>
+                </div>
+                <div class="api-tips" style="margin-top: 15px;">
+                    <details>
+                        <summary style="cursor: pointer; font-weight: 500; color: var(--text-api);">💡 API Key Benefits & Tips</summary>
+                        <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
+                            <p><strong>With API Key:</strong></p>
+                            <ul style="margin: 5px 0 15px 20px;">
+                                <li>Real-time stock and cryptocurrency prices</li>
+                                <li>Live market indices (S&P 500, NASDAQ, Dow Jones)</li>
+                                <li>Historical forex charts with 30-day data</li>
+                                <li>Higher rate limits (5 calls/min free, 500 calls/min premium)</li>
+                            </ul>
+                            <p><strong>Tips:</strong></p>
+                            <ul style="margin: 5px 0 0 20px;">
+                                <li>Free API keys work great for personal use</li>
+                                <li>Your key is stored locally and never shared</li>
+                                <li>If quota exceeded, app falls back to demo data</li>
+                            </ul>
+                        </div>
+                    </details>
                 </div>
             </div>
 
