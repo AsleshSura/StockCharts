@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Stock & Crypto Chart Viewer</title>
+        <title>Stock, Crypto & Forex Chart Viewer</title>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
         <link rel="stylesheet" href="style.css">
@@ -11,15 +11,15 @@
     <body>
         <div class="container">
             <div class="header">
-                <h1>Stock & Crypto Chart Visualizer</h1>
+                <h1>Stock, Crypto & Forex Chart Visualizer</h1>
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
                     <span class="theme-icon">🌙</span>
                 </button>
             </div>
 
             <div class="info-section">
-                <h3>Stock & Crypto Chart Visualizer</h3>
-                <p>Get stock data and interactive charts for any publicly traded company, plus major cryptocurrencies like Bitcoin and Ethereum.</p>
+                <h3>Stock, Crypto & Forex Chart Visualizer</h3>
+                <p>Get stock data and interactive charts for any publicly traded company, plus major cryptocurrencies like Bitcoin and Ethereum, and real-time forex currency pair tracking.</p>
                 <p><small><em>Note: Enter your API key below for real-time data, or leave empty to use demo data. Get a free API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a>.</em></small></p>
             </div>
 
@@ -167,6 +167,66 @@
                 </div>
                 <div class="crypto-note">
                     <p><small><em>💡 <strong>Tip:</strong> You can also type crypto symbols directly in the search box (e.g., BTC-USD, ETH-USD, ADA-USD)</em></small></p>
+                </div>
+            </div>
+
+            <!-- Forex Trading Section -->
+            <div class="forex-section">
+                <div class="forex-header">
+                    <h3>Forex Trading - Currency Pairs</h3>
+                    <div class="forex-status">
+                        <span class="status-indicator" id="forexStatus">24/7 Trading</span>
+                    </div>
+                </div>
+                <div class="forex-container">
+                    <div class="forex-input">
+                        <div class="currency-selector">
+                            <label for="baseCurrency">Base Currency:</label>
+                            <select id="baseCurrency">
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="AUD">AUD - Australian Dollar</option>
+                                <option value="CAD">CAD - Canadian Dollar</option>
+                                <option value="CHF">CHF - Swiss Franc</option>
+                                <option value="CNY">CNY - Chinese Yuan</option>
+                            </select>
+                        </div>
+                        <div class="currency-controls">
+                            <div class="currency-separator">/</div>
+                            <button id="swapCurrencies" onclick="swapCurrencies()" title="Swap base and quote currencies">
+                                <span class="swap-icon">⇄</span>
+                            </button>
+                        </div>
+                        <div class="currency-selector">
+                            <label for="quoteCurrency">Quote Currency:</label>
+                            <select id="quoteCurrency">
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="AUD">AUD - Australian Dollar</option>
+                                <option value="CAD">CAD - Canadian Dollar</option>
+                                <option value="CHF">CHF - Swiss Franc</option>
+                                <option value="CNY">CNY - Chinese Yuan</option>
+                            </select>
+                        </div>
+                        <button id="addForexPair" onclick="addCurrencyPair()">Track Pair</button>
+                    </div>
+                    <div id="forexPairs" class="forex-pairs">
+                        <p class="empty-state">No currency pairs tracked yet. Add one above!</p>
+                    </div>
+                </div>
+                <div class="forex-refresh">
+                    <button id="refreshForex" onclick="refreshForexRates()">
+                        <span class="refresh-icon">↻</span>
+                        Refresh Rates
+                    </button>
+                    <span class="last-updated-forex">Last updated: <span id="lastUpdatedForex">-</span></span>
+                </div>
+                <div class="forex-note">
+                    <p><small><em>💱 <strong>Forex Tip:</strong> Currency pairs show how much of the quote currency equals one unit of the base currency (e.g., EUR/USD = 1.0850 means 1 Euro = 1.0850 US Dollars)</em></small></p>
                 </div>
             </div>
 
